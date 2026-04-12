@@ -1,15 +1,13 @@
 """
-SafeEval Dashboard — Streamlit UI inspired by the reference design.
-Run with: streamlit run dashboard/app.py
+SafeEval Dashboard — Streamlit UI
+Run: streamlit run dashboard/app.py
 """
-import sys
-import os
+import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 from dashboard.data_loader import load_results, generate_demo_data, get_daily_stats
@@ -18,7 +16,6 @@ from dashboard.charts.timeseries import (
     radar_chart, asr_bar_chart, heatmap_chart,
 )
 
-# ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="SafeEval",
     page_icon="🛡️",
@@ -26,621 +23,632 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Custom CSS ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-  /* Global */
-  [data-testid="stAppViewContainer"] { background: #f8fafc; }
-  [data-testid="stSidebar"] { background: #fff; border-right: 1px solid #e8eaf0; }
-  [data-testid="stSidebar"] .stRadio label { font-size: 13px; }
-  .block-container { padding: 1rem 1.5rem 2rem; }
-  h1,h2,h3 { font-weight: 600; }
-  hr { margin: 0.5rem 0; border-color: #e8eaf0; }
+/* ── Base ── */
+html, body, [data-testid="stAppViewContainer"] { background: #f4f6fb !important; }
+.block-container { padding: 1rem 1.5rem 2rem !important; max-width: 100% !important; }
+#MainMenu, footer, [data-testid="stDecoration"], [data-testid="stToolbar"] { display: none !important; }
 
-  /* Top breadcrumb / filter bar */
-  .topbar {
-    display: flex; align-items: center; justify-content: space-between;
-    background: #fff; border: 1px solid #e8eaf0; border-radius: 10px;
-    padding: 8px 16px; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;
-  }
-  .topbar-left { font-size: 13px; color: #64748b; }
-  .topbar-left b { color: #1e293b; }
+/* ── Sidebar ── */
+[data-testid="stSidebar"] { background: #0f172a !important; border-right: none !important; }
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown div,
+[data-testid="stSidebar"] label { color: #94a3b8 !important; font-size: 12px !important; }
+[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 16px !important; }
 
-  /* Hero metric strip */
-  .hero-strip {
-    background: #fff; border: 1px solid #e8eaf0; border-radius: 10px;
-    padding: 14px 20px; margin-bottom: 12px;
-    display: flex; gap: 24px; align-items: stretch; flex-wrap: wrap;
-  }
-  .hero-pass { border-right: 1px solid #e8eaf0; padding-right: 24px; }
-  .hero-pass .big { font-size: 32px; font-weight: 700; color: #1a6cf5; line-height: 1; }
-  .hero-pass .lbl { font-size: 11px; color: #94a3b8; margin-top: 4px; }
+/* Sidebar nav buttons */
+[data-testid="stSidebar"] .stButton > button {
+  width: 100% !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+  border: none !important;
+  color: #94a3b8 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 9px 12px !important;
+  border-radius: 8px !important;
+  margin-bottom: 2px !important;
+  transition: all 0.15s !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+  background: #1d4ed8 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
 
-  /* Stat cards */
-  .stat-block { display: flex; flex-direction: column; justify-content: center;
-    padding: 0 20px; border-right: 1px solid #e8eaf0; }
-  .stat-block:last-child { border-right: none; }
-  .stat-label { font-size: 10px; color: #94a3b8; margin-bottom: 2px; line-height: 1.3; }
-  .stat-value { font-size: 22px; font-weight: 600; color: #1e293b; line-height: 1; }
-  .stat-value.green { color: #16a34a; }
-  .stat-value.blue { color: #1a6cf5; }
+/* Sidebar filters */
+[data-testid="stSidebar"] .stSelectbox > div > div,
+[data-testid="stSidebar"] .stMultiSelect > div > div {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+  font-size: 12px !important;
+}
+[data-testid="stSidebar"] .stMultiSelect span[data-baseweb="tag"] {
+  background: #1e3a5f !important; color: #93c5fd !important;
+}
 
-  /* Perf metric rows */
-  .pm-row { display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: #475569; margin-bottom: 3px; }
-  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .pm-val { font-weight: 600; margin-left: auto; color: #1e293b; }
+/* ── Time filter buttons in main area ── */
+div[data-testid="stMainBlockContainer"] .stButton > button {
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 5px 4px !important;
+  border-radius: 7px !important;
+}
+div[data-testid="stMainBlockContainer"] .stButton > button:hover {
+  background: #f1f5f9 !important;
+}
+div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #fff !important;
+}
 
-  /* Section card */
-  .section-card {
-    background: #fff; border: 1px solid #e8eaf0; border-radius: 10px;
-    padding: 14px 16px; margin-bottom: 12px;
-  }
-  .card-title { font-size: 11px; color: #94a3b8; margin-bottom: 8px; font-weight: 500; }
+/* ── Topbar ── */
+.topbar {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 9px 16px; font-size: 13px; color: #64748b;
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar b { color: #1e293b; }
+.model-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #f0f7ff; border: 1px solid #bfdbfe;
+  border-radius: 20px; padding: 3px 12px;
+  font-size: 12px; font-weight: 600; color: #1d4ed8;
+  margin-left: auto;
+}
+.model-dot { width: 7px; height: 7px; border-radius: 50%; }
 
-  /* Mini chart labels */
-  .chart-section { background: #fff; border: 1px solid #e8eaf0;
-    border-radius: 10px; padding: 12px 14px; }
+/* ── Hero strip ── */
+.hero-strip {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  padding: 18px 20px; margin-bottom: 12px;
+  display: flex; align-items: stretch; gap: 0; flex-wrap: nowrap;
+}
+.hero-pass-block {
+  display: flex; flex-direction: column; justify-content: center;
+  padding-right: 24px; border-right: 1px solid #e2e8f0; min-width: 110px;
+}
+.hero-pass-block .big { font-size: 40px; font-weight: 800; line-height: 1; }
+.hero-pass-block .lbl { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+.hero-pass-block .sub { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
 
-  /* Table styles */
-  .eval-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .eval-table th {
-    text-align: left; padding: 7px 10px; font-size: 10px; font-weight: 600;
-    color: #94a3b8; border-bottom: 1px solid #e8eaf0; white-space: nowrap;
-    text-transform: uppercase; letter-spacing: 0.04em; background: #f8fafc;
-  }
-  .eval-table td {
-    padding: 8px 10px; border-bottom: 1px solid #f1f5f9;
-    color: #334155; vertical-align: middle;
-  }
-  .eval-table tr:hover td { background: #f8fafc; }
-  .badge { display:inline-block; padding: 2px 8px; border-radius: 10px;
-    font-size: 10px; font-weight: 600; white-space: nowrap; }
-  .badge-pass { background:#dcfce7; color:#166534; }
-  .badge-fail { background:#fee2e2; color:#991b1b; }
-  .slug-pill { background:#f1f5f9; color:#64748b; font-size:10px;
-    padding:2px 7px; border-radius:4px; font-family:monospace; }
-  .model-gpt4 { color:#7c3aed; font-weight:600; font-size:11px; }
-  .model-gpt35 { color:#0369a1; font-weight:600; font-size:11px; }
-  .model-claude { color:#d97706; font-weight:600; font-size:11px; }
-  .model-mistral { color:#059669; font-weight:600; font-size:11px; }
-  .topic-pill { display:inline-block; padding:1px 7px; border-radius:8px; font-size:10px; font-weight:500; }
-  .t-History { background:#dbeafe; color:#1d4ed8; }
-  .t-Science { background:#dcfce7; color:#166534; }
-  .t-Sports { background:#fef9c3; color:#92400e; }
-  .t-Entertainment { background:#fce7f3; color:#9d174d; }
-  .t-Media { background:#ede9fe; color:#5b21b6; }
-  .t-Technology { background:#e0f2fe; color:#0c4a6e; }
-  .t-Finance { background:#fef3c7; color:#78350f; }
-  .cust-pill { color:#64748b; font-size:10px; }
-  .truncate { max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
+/* Safety KPIs */
+.safety-section {
+  display: flex; align-items: stretch; padding: 0 0 0 20px;
+  border-right: 1px solid #e2e8f0; gap: 0;
+}
+.safety-header {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 16px 0 0; border-right: 1px solid #f1f5f9; min-width: 60px;
+}
+.safety-header .sh-lbl { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
+.safety-header .sh-sub { font-size: 9px; color: #cbd5e1; margin-top: 2px; }
+.skpi { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; min-width: 90px; }
+.skpi:last-child { border-right: none; }
+.skpi-label { font-size: 10px; color: #94a3b8; line-height: 1.3; margin-bottom: 4px; }
+.skpi-value { font-size: 22px; font-weight: 800; line-height: 1; }
+.skpi-value.danger { color: #dc2626; }
+.skpi-value.warn   { color: #d97706; }
+.skpi-value.good   { color: #16a34a; }
+.skpi-sub { font-size: 10px; margin-top: 3px; }
+.skpi-sub.danger { color: #fca5a5; }
+.skpi-sub.good   { color: #86efac; }
 
-  /* Run panel */
-  .run-config-card {
-    background:#f0f7ff; border:1px solid #bfdbfe; border-radius:10px; padding:14px; margin-bottom:12px;
-  }
-  .stButton > button {
-    border-radius: 8px; font-weight: 600; font-size: 13px;
-  }
+/* Ops stats */
+.ops-section { display: flex; align-items: stretch; padding-left: 20px; flex: 1; gap: 0; }
+.ops-stat { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; }
+.ops-stat:last-child { border-right: none; }
+.ops-label { font-size: 10px; color: #94a3b8; line-height: 1.3; margin-bottom: 3px; }
+.ops-value { font-size: 18px; font-weight: 700; color: #334155; }
+.ops-value.blue { color: #2563eb; }
 
-  /* Metric pill row */
-  .metric-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; }
-  .mpill { background:#f1f5f9; border:1px solid #e2e8f0; border-radius:8px;
-    padding:4px 10px; font-size:11px; color:#475569; }
-  .mpill b { color:#1e293b; }
+/* ── Topic pills ── */
+.topic-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.topic-pill { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+.t-History       { background: #dbeafe; color: #1d4ed8; }
+.t-Science       { background: #dcfce7; color: #166534; }
+.t-Sports        { background: #fef3c7; color: #92400e; }
+.t-Entertainment { background: #fce7f3; color: #9d174d; }
+.t-Media         { background: #ede9fe; color: #5b21b6; }
+.t-Technology    { background: #e0f2fe; color: #0c4a6e; }
+.t-Finance       { background: #fef9c3; color: #78350f; }
+.t-General       { background: #f1f5f9; color: #475569; }
 
-  /* Scrollable table wrapper */
-  .table-scroll { overflow-x: auto; border-radius:8px; }
+/* ── Chart cards ── */
+.chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
+.card-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
 
-  /* Hide default streamlit elements */
-  #MainMenu { visibility: hidden; }
-  footer { visibility: hidden; }
-  [data-testid="stDecoration"] { display: none; }
+/* ── Section card ── */
+.section-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
+.section-heading { font-size: 12px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+
+/* ── Table ── */
+.eval-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.eval-table th {
+  text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700;
+  color: #94a3b8; border-bottom: 2px solid #f1f5f9; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: .05em; background: #f8fafc;
+}
+.eval-table td { padding: 9px 10px; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: middle; }
+.eval-table tr:hover td { background: #f8fafc; }
+.table-wrap { overflow-x: auto; }
+
+/* Badges */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-pass   { background: #dcfce7; color: #15803d; }
+.badge-fail   { background: #fee2e2; color: #b91c1c; }
+.badge-attack { background: #fef3c7; color: #92400e; }
+.badge-benign { background: #f0fdf4; color: #166534; }
+.slug-pill { background: #f1f5f9; color: #475569; font-size: 10px; padding: 2px 8px; border-radius: 5px; font-family: monospace; }
+.model-gpt4    { color: #7c3aed; font-weight: 700; font-size: 11px; }
+.model-gpt35   { color: #0369a1; font-weight: 700; font-size: 11px; }
+.model-claude  { color: #b45309; font-weight: 700; font-size: 11px; }
+.model-mistral { color: #059669; font-weight: 700; font-size: 11px; }
+.harm-high { color: #dc2626; font-weight: 700; }
+.harm-low  { color: #94a3b8; }
+.truncate { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+
+/* KPI card for other pages */
+.kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; }
+.kpi-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.kpi-value { font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; }
+.kpi-value.blue  { color: #1d4ed8; }
+.kpi-value.green { color: #16a34a; }
+.kpi-value.amber { color: #d97706; }
+.kpi-value.red   { color: #dc2626; }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ── Session state ──────────────────────────────────────────────────────────────
-if "df" not in st.session_state:
-    st.session_state.df = generate_demo_data(n=500, days=30)
-if "running" not in st.session_state:
-    st.session_state.running = False
-if "active_page" not in st.session_state:
-    st.session_state.active_page = "Observe"
-if "time_filter" not in st.session_state:
-    st.session_state.time_filter = "30d"
+if "df"   not in st.session_state: st.session_state.df   = generate_demo_data(n=500, days=30)
+if "page" not in st.session_state: st.session_state.page = "Observe"
+if "tf"   not in st.session_state: st.session_state.tf   = "30d"
 
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🛡️ SafeEval")
-    st.markdown("---")
-    page = st.radio(
-        "Navigation",
-        ["Observe", "Run Evaluation", "Safety Analysis", "Capability Analysis", "Model Comparison"],
-        label_visibility="collapsed",
-    )
-    st.session_state.active_page = page
-    st.markdown("---")
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-    st.markdown("**Filters**")
-    _model_options = ["gpt-4", "gpt-3.5-turbo", "claude-sonnet", "mistral-7b"]
-    if page == "Observe":
-        _model_sel = st.selectbox(
-            "Model",
-            options=_model_options,
-            index=0,
-            help="Hero strip shows metrics for a single model.",
-        )
-        model_filter = [_model_sel]
+    NAV = [
+        ("📊", "Observe"),
+        ("▶️", "Run Evaluation"),
+        ("🔴", "Safety Analysis"),
+        ("⚡", "Capability Analysis"),
+        ("⚖️", "Model Comparison"),
+    ]
+    for icon, label in NAV:
+        kind = "primary" if st.session_state.page == label else "secondary"
+        if st.button(f"{icon}  {label}", key=f"nav_{label}", use_container_width=True, type=kind):
+            st.session_state.page = label
+            st.rerun()
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;padding:0 4px'>Filters</div>", unsafe_allow_html=True)
+
+    _model_opts = ["gpt-4", "gpt-3.5-turbo", "claude-sonnet", "mistral-7b"]
+    if st.session_state.page == "Observe":
+        _sel = st.selectbox("Model", _model_opts, index=0, key="obs_model")
+        model_filter = [_sel]
     else:
-        _mf = st.multiselect(
-            "Model", options=_model_options,
-            default=["gpt-4", "gpt-3.5-turbo", "claude-sonnet"],
-        )
-        # Prevent empty selection — fall back to first option
-        model_filter = _mf if _mf else [_model_options[0]]
-    topic_filter = st.multiselect(
-        "Topic", options=["History", "Science", "Sports", "Entertainment", "Media", "Technology", "Finance"],
-        default=[],
-    )
-    result_filter = st.selectbox("Result", ["All", "Passed", "Failed"])
-    st.markdown("---")
-    st.markdown(
-        "<div style='font-size:11px;color:#94a3b8'>SafeEval v0.1.0<br>Four-layer LLM evaluation</div>",
-        unsafe_allow_html=True,
-    )
+        _mf = st.multiselect("Model", _model_opts, default=["gpt-4", "gpt-3.5-turbo", "claude-sonnet"], key="multi_model")
+        model_filter = _mf if _mf else [_model_opts[0]]
+
+    topic_filter  = st.multiselect("Topic",
+        ["History","Science","Sports","Entertainment","Media","Technology","Finance"],
+        default=[], key="topic_f")
+    result_filter = st.selectbox("Result", ["All","Passed","Failed"], key="result_f")
+
+    st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:10px;color:#334155'>SafeEval v0.1.0<br>Four-layer LLM evaluation</div>", unsafe_allow_html=True)
+
+page = st.session_state.page
 
 
-# ── Load + filter data ─────────────────────────────────────────────────────────
+# ── Filter data ────────────────────────────────────────────────────────────────
 df_all = st.session_state.df.copy()
-
-time_map = {"1d": 1, "7d": 7, "14d": 14, "30d": 30, "60d": 60, "90d": 90}
-days_back = time_map.get(st.session_state.time_filter, 30)
+time_map  = {"1d":1,"7d":7,"14d":14,"30d":30,"60d":60,"90d":90}
+days_back = time_map.get(st.session_state.tf, 30)
 
 if "timestamp_dt" in df_all.columns:
-    cutoff = datetime.now() - timedelta(days=days_back)
     df_all["timestamp_dt"] = pd.to_datetime(df_all["timestamp_dt"], errors="coerce")
+    cutoff = datetime.now() - timedelta(days=days_back)
     df = df_all[df_all["timestamp_dt"] >= cutoff].copy()
 else:
     df = df_all.copy()
 
-if model_filter:
-    df = df[df["model_name"].isin(model_filter)]
-if topic_filter:
-    df = df[df["topic"].isin(topic_filter)]
-if result_filter == "Passed":
-    df = df[df["overall_pass"] == True]
-elif result_filter == "Failed":
-    df = df[df["overall_pass"] == False]
+if model_filter:  df = df[df["model_name"].isin(model_filter)]
+if topic_filter:  df = df[df["topic"].isin(topic_filter)]
+if result_filter == "Passed": df = df[df["overall_pass"] == True]
+elif result_filter == "Failed": df = df[df["overall_pass"] == False]
 
-# ── Compute KPIs ───────────────────────────────────────────────────────────────
-total_inferences = len(df)
-pass_rate = round(df["overall_pass"].mean() * 100, 1) if total_inferences > 0 else 0.0
-avg_cost = round(df["cost_per_1k"].mean(), 2) if total_inferences > 0 else 0.0
-avg_tokens = int(df["total_tokens"].mean()) if total_inferences > 0 else 0
-avg_latency = int(df["latency_ms"].mean()) if total_inferences > 0 else 0
-pct_positive = round((df["overall_pass"].sum() / max(total_inferences, 1)) * 100, 1)
+# ── KPIs ──────────────────────────────────────────────────────────────────────
+n         = len(df)
+pass_r    = round(df["overall_pass"].mean()*100,1) if n>0 else 0.0
+avg_cost  = round(df["cost_per_1k"].mean(),2)       if n>0 else 0.0
+avg_tok   = int(df["total_tokens"].mean())           if n>0 else 0
+avg_lat   = int(df["latency_ms"].mean())             if n>0 else 0
+asr       = round(df[df["is_attack"]]["harmfulness_score"].gt(0.5).mean()*100,1) if df["is_attack"].any() else 0.0
+refr      = round(df[df["is_attack"]]["is_refusal"].mean()*100,1)                if df["is_attack"].any() else 0.0
+fpr       = round(df[~df["is_attack"]]["is_refusal"].mean()*100,1)               if (~df["is_attack"]).any() else 0.0
+hall_r    = round(df["hallucination_detected"].mean()*100,1)                      if n>0 else 0.0
+topic_cnts= df["topic"].value_counts().head(5).to_dict() if "topic" in df.columns else {}
+daily     = get_daily_stats(df_all if n<5 else df, days=days_back)
 
-asr = round(df[df["is_attack"]]["harmfulness_score"].gt(0.5).mean() * 100, 1) if df["is_attack"].any() else 0.0
-refusal_rate = round(df[df["is_attack"]]["is_refusal"].mean() * 100, 1) if df["is_attack"].any() else 0.0
-fpr = round(df[~df["is_attack"]]["is_refusal"].mean() * 100, 1) if (~df["is_attack"]).any() else 0.0
-hallucination_rate = round(df["hallucination_detected"].mean() * 100, 1) if total_inferences > 0 else 0.0
-
-ctx_sufficiency = round(df["truthfulness_score"].quantile(0.75), 2)
-answer_completeness = round(df["truthfulness_score"].quantile(0.5), 2)
-resp_faithfulness = round(df["truthfulness_score"].mean() + 0.05, 2)
-ragas_relevancy = round(df["truthfulness_score"].mean() + 0.02, 2)
-
-topic_counts = df["topic"].value_counts().head(5).to_dict() if "topic" in df.columns else {}
-daily = get_daily_stats(df_all if len(df) < 5 else df, days=days_back)
+def asr_color(v):     return "danger" if v>20 else ("warn" if v>10 else "good")
+def fpr_color(v):     return "danger" if v>15 else ("warn" if v>8  else "good")
+def refusal_color(v): return "good"   if v>60 else ("warn" if v>30 else "danger")
+def hall_color(v):    return "danger" if v>20 else ("warn" if v>10 else "good")
+def pass_hex(v):      return "#16a34a" if v>=80 else ("#d97706" if v>=60 else "#dc2626")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: OBSERVE
-# ═══════════════════════════════════════════════════════════════════════════════
+# ╔═══════════════════════════════════════════╗
+# ║  OBSERVE                                  ║
+# ╚═══════════════════════════════════════════╝
 if page == "Observe":
 
-    # ── Top bar ────────────────────────────────────────────────────────────────
-    col_breadcrumb, col_time = st.columns([3, 4])
-    with col_breadcrumb:
+    # Topbar + time filters
+    bc, tf = st.columns([3, 5])
+    with bc:
+        mdot_color = {"gpt-4":"#7c3aed","gpt-3.5-turbo":"#0369a1","claude-sonnet":"#b45309","mistral-7b":"#059669"}.get(model_filter[0],"#64748b")
         st.markdown(
-            '<div class="topbar">'
-            '<span class="topbar-left">Observe › <b>All</b></span>'
-            '<span class="topbar-left" style="margin-left:16px">Prompt &nbsp;|&nbsp; Topic &nbsp;|&nbsp; Model &nbsp;|&nbsp; Customer</span>'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-    with col_time:
-        tf_cols = st.columns(7)
-        options = ["1d", "7d", "14d", "30d", "60d", "90d", "Custom"]
-        for i, opt in enumerate(options):
-            with tf_cols[i]:
-                active = st.session_state.time_filter == opt
-                style = "background:#1a6cf5;color:#fff;border:none;" if active else ""
-                if st.button(opt, key=f"tf_{opt}", use_container_width=True):
-                    st.session_state.time_filter = opt
+            f'<div class="topbar">Observe › <b>All</b>'
+            f'<span class="model-badge"><span class="model-dot" style="background:{mdot_color}"></span>{model_filter[0]}</span>'
+            f'</div>', unsafe_allow_html=True)
+    with tf:
+        tfc = st.columns(7)
+        for i, opt in enumerate(["1d","7d","14d","30d","60d","90d","Custom"]):
+            with tfc[i]:
+                active = st.session_state.tf == opt
+                if st.button(opt, key=f"tf_{opt}", use_container_width=True,
+                             type="primary" if active else "secondary"):
+                    st.session_state.tf = opt
                     st.rerun()
 
-    # ── Hero strip ─────────────────────────────────────────────────────────────
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # Hero strip
+    topics_html = "".join([
+        f'<span class="topic-pill t-{t}">{t} <span style="opacity:.6">{c}</span></span>'
+        for t,c in list(topic_cnts.items())[:5]
+    ])
     st.markdown(f"""
     <div class="hero-strip">
-      <div class="hero-pass">
-        <div class="big">{pass_rate}%</div>
+      <div class="hero-pass-block">
+        <div class="big" style="color:{pass_hex(pass_r)}">{pass_r}%</div>
         <div class="lbl">Pass rate</div>
+        <div class="sub">{n:,} inferences</div>
       </div>
-      <div style="border-right:1px solid #e8eaf0;padding-right:24px;min-width:180px">
-        <div style="font-size:10px;color:#94a3b8;margin-bottom:6px;font-weight:500">Performance metrics</div>
-        <div class="pm-row"><span class="dot" style="background:#22c55e"></span>Context Sufficiency: Passed<span class="pm-val">{ctx_sufficiency}</span></div>
-        <div class="pm-row"><span class="dot" style="background:#f59e0b"></span>Answer Completeness: Passed<span class="pm-val">{answer_completeness}</span></div>
-        <div class="pm-row"><span class="dot" style="background:#3b82f6"></span>Response Faithfulness: Passed<span class="pm-val">{min(resp_faithfulness,1.0):.2f}</span></div>
-        <div class="pm-row"><span class="dot" style="background:#ef4444"></span>Ragas Answer Relevancy<span class="pm-val">{min(ragas_relevancy,1.0):.2f}</span></div>
-        <div style="font-size:10px;color:#cbd5e1;margin-top:2px">+1 more</div>
+      <div class="safety-section">
+        <div class="safety-header">
+          <div class="sh-lbl">Safety</div>
+          <div class="sh-sub">last {days_back}d</div>
+        </div>
+        <div class="skpi">
+          <div class="skpi-label">Attack Success<br>Rate (ASR)</div>
+          <div class="skpi-value {asr_color(asr)}">{asr}%</div>
+          <div class="skpi-sub {'danger' if asr>10 else 'good'}">{'↑ high risk' if asr>10 else '↓ low risk'}</div>
+        </div>
+        <div class="skpi">
+          <div class="skpi-label">Refusal<br>Rate</div>
+          <div class="skpi-value {refusal_color(refr)}">{refr}%</div>
+          <div class="skpi-sub {'good' if refr>60 else 'danger'}">{'↑ effective' if refr>60 else '↓ low'}</div>
+        </div>
+        <div class="skpi">
+          <div class="skpi-label">False Positive<br>Rate</div>
+          <div class="skpi-value {fpr_color(fpr)}">{fpr}%</div>
+          <div class="skpi-sub {'danger' if fpr>8 else 'good'}">{'↑ over-refusing' if fpr>8 else '↓ on-target'}</div>
+        </div>
+        <div class="skpi">
+          <div class="skpi-label">Hallucination<br>Rate</div>
+          <div class="skpi-value {hall_color(hall_r)}">{hall_r}%</div>
+        </div>
       </div>
-      <div class="stat-block">
-        <div class="stat-label"># of inferences</div>
-        <div class="stat-value blue">{total_inferences:,}</div>
-      </div>
-      <div class="stat-block">
-        <div class="stat-label">Average cost /<br>1000 inferences</div>
-        <div class="stat-value">${avg_cost}</div>
-      </div>
-      <div class="stat-block">
-        <div class="stat-label">Average tokens used /<br>inference</div>
-        <div class="stat-value">{avg_tokens}</div>
-      </div>
-      <div class="stat-block">
-        <div class="stat-label">Average response time /<br>inference</div>
-        <div class="stat-value">{avg_latency:,}ms</div>
-      </div>
-      <div class="stat-block">
-        <div class="stat-label">Percent positive feedback</div>
-        <div class="stat-value green">{pct_positive}%</div>
-      </div>
-      <div class="stat-block" style="border-right:none">
-        <div class="stat-label" style="margin-bottom:6px">Most common topics</div>
-        {''.join([f'<span class="topic-pill t-{t}" style="margin:2px">{t} <span style="opacity:.6">{c}</span></span>' for t,c in list(topic_counts.items())[:5]])}
+      <div class="ops-section">
+        <div class="ops-stat">
+          <div class="ops-label">Avg cost /<br>1K inferences</div>
+          <div class="ops-value">${avg_cost}</div>
+        </div>
+        <div class="ops-stat">
+          <div class="ops-label">Avg tokens /<br>inference</div>
+          <div class="ops-value">{avg_tok}</div>
+        </div>
+        <div class="ops-stat">
+          <div class="ops-label">Avg response<br>time</div>
+          <div class="ops-value">{avg_lat:,}ms</div>
+        </div>
+        <div class="ops-stat">
+          <div class="ops-label" style="margin-bottom:6px">Top topics</div>
+          <div class="topic-row">{topics_html}</div>
+        </div>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 6 Mini charts ──────────────────────────────────────────────────────────
+    # 4 mini charts
     if len(daily) > 0:
-        chart_cols = st.columns(6)
-        chart_specs = [
-            ("Total inferences", "inferences", "bar", "#22d3ee"),
-            ("Total cost ($) / day", "cost", "bar", "#4ade80"),
-            ("Pass rate (%)", "pass_rate", "line", "#f87171"),
-            ("Total failures", "failures", "bar", "#fca5a5"),
+        cc = st.columns(4)
+        for i,(title,col_n,kind,color) in enumerate([
+            ("Pass rate (%)",          "pass_rate",   "line", "#22c55e"),
+            ("Total inferences",       "inferences",  "bar",  "#3b82f6"),
+            ("Total failures",         "failures",    "bar",  "#f87171"),
             ("Avg response time (ms)", "avg_latency", "line", "#94a3b8"),
-            ("Total tokens used", "total_tokens", "line", "#fb923c"),
-        ]
-        for i, (title, col_name, kind, color) in enumerate(chart_specs):
-            with chart_cols[i]:
-                with st.container():
-                    st.markdown(f'<div class="chart-section"><div class="card-title">{title}</div>', unsafe_allow_html=True)
-                    if col_name in daily.columns:
-                        if kind == "bar":
-                            fig = bar_chart(daily, col_name, color)
-                        else:
-                            fig = line_chart(daily, col_name, color)
-                        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-                    st.markdown('</div>', unsafe_allow_html=True)
+        ]):
+            with cc[i]:
+                st.markdown(f'<div class="chart-card"><div class="card-title">{title}</div>', unsafe_allow_html=True)
+                if col_n in daily.columns:
+                    fig = bar_chart(daily,col_n,color) if kind=="bar" else line_chart(daily,col_n,color)
+                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})
+                st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-    # ── Prompt runs table ──────────────────────────────────────────────────────
-    with st.container():
-        st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    # Prompt runs table
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
 
-        hdr_l, hdr_m, hdr_r = st.columns([2, 3, 3])
-        with hdr_l:
-            st.markdown(f"<div style='font-size:12px;color:#64748b;padding-top:6px'>Showing {min(50,len(df))} of {len(df):,} prompt runs</div>", unsafe_allow_html=True)
-        with hdr_m:
-            col_grade, col_fail, col_sort = st.columns(3)
-            with col_grade:
-                grade_filter = st.selectbox("Grade", ["All", "Passed", "Failed"], label_visibility="collapsed", key="grade_sel")
-            with col_fail:
-                fail_only = st.checkbox("Failures only", key="fail_chk")
-            with col_sort:
-                sort_by = st.selectbox("Sort by", ["Latest", "Latency ↓", "Cost ↓", "Tokens ↓"], label_visibility="collapsed", key="sort_sel")
-        with hdr_r:
-            search = st.text_input("Search", placeholder="/ Search prompts and responses", label_visibility="collapsed", key="search_box")
+    tl, tm, tr = st.columns([2, 3, 3])
+    with tl:
+        st.markdown(f"<div style='font-size:13px;color:#64748b;padding-top:8px'>"
+                    f"Showing <b style='color:#1e293b'>{min(50,n):,}</b> of <b style='color:#1e293b'>{n:,}</b> prompt runs</div>",
+                    unsafe_allow_html=True)
+    with tm:
+        c1,c2,c3 = st.columns(3)
+        with c1: grade_f   = st.selectbox("Grade", ["All","Passed","Failed"], label_visibility="collapsed", key="gf")
+        with c2: type_f    = st.selectbox("Type",  ["All","Attacks","Benchmarks"], label_visibility="collapsed", key="typef")
+        with c3: sort_by   = st.selectbox("Sort",  ["Latest","Latency ↓","Harm ↓","Tokens ↓"], label_visibility="collapsed", key="sb")
+    with tr:
+        search = st.text_input("", placeholder="/ Search prompts and responses", label_visibility="collapsed", key="srch")
 
-        # Apply table filters
-        tdf = df.copy()
-        if grade_filter == "Passed":
-            tdf = tdf[tdf["overall_pass"] == True]
-        elif grade_filter == "Failed":
-            tdf = tdf[tdf["overall_pass"] == False]
-        if fail_only:
-            tdf = tdf[tdf["overall_pass"] == False]
-        if search:
-            mask = (
-                tdf["prompt"].str.contains(search, case=False, na=False) |
-                tdf["response"].str.contains(search, case=False, na=False)
-            )
-            tdf = tdf[mask]
-        if sort_by == "Latency ↓":
-            tdf = tdf.sort_values("latency_ms", ascending=False)
-        elif sort_by == "Cost ↓":
-            tdf = tdf.sort_values("cost_per_1k", ascending=False)
-        elif sort_by == "Tokens ↓":
-            tdf = tdf.sort_values("total_tokens", ascending=False)
+    tdf = df.copy()
+    if grade_f == "Passed":       tdf = tdf[tdf["overall_pass"]==True]
+    elif grade_f == "Failed":     tdf = tdf[tdf["overall_pass"]==False]
+    if type_f == "Attacks":       tdf = tdf[tdf["is_attack"]==True]
+    elif type_f == "Benchmarks":  tdf = tdf[tdf["is_attack"]==False]
+    if search:
+        mask = (tdf["prompt"].str.contains(search,case=False,na=False)|
+                tdf["response"].str.contains(search,case=False,na=False))
+        tdf = tdf[mask]
+    if sort_by=="Latency ↓":  tdf = tdf.sort_values("latency_ms",ascending=False)
+    elif sort_by=="Harm ↓":   tdf = tdf.sort_values("harmfulness_score",ascending=False)
+    elif sort_by=="Tokens ↓": tdf = tdf.sort_values("total_tokens",ascending=False)
 
-        display = tdf.head(50)
+    display = tdf.head(50)
 
-        def model_class(m):
-            if "gpt-4" in m and "turbo" not in m: return "model-gpt4"
-            if "3.5" in m or "turbo" in m: return "model-gpt35"
-            if "claude" in m: return "model-claude"
-            return "model-mistral"
+    def mcls(m):
+        if "gpt-4" in m and "turbo" not in m: return "model-gpt4"
+        if "3.5" in m or "turbo" in m: return "model-gpt35"
+        if "claude" in m: return "model-claude"
+        return "model-mistral"
 
-        rows_html = ""
-        for _, row in display.iterrows():
-            passed = row.get("overall_pass", True)
-            ep = row.get("evals_passed", 2)
-            et = row.get("evals_total", 3)
-            ev_label = f"{ep} {'passed' if ep == et else 'failed'}"
-            ev_class = "badge-pass" if ep == et else "badge-fail"
-            fb_class = "badge-pass" if passed else "badge-fail"
-            fb_label = "passed" if passed else "failed"
-            slug = row.get("slug", row.get("category", "closed_qa"))
-            model = row.get("model_name", "gpt-4")
-            topic = row.get("topic", "History")
-            prompt_text = str(row.get("prompt", ""))[:60] + ("..." if len(str(row.get("prompt", ""))) > 60 else "")
-            resp_text = str(row.get("response", ""))[:80] + ("..." if len(str(row.get("response", ""))) > 80 else "")
-            cust = row.get("customer", "")
-            ts = str(row.get("timestamp", ""))[:14]
+    rows_html = ""
+    for _, row in display.iterrows():
+        passed    = row.get("overall_pass", True)
+        is_atk    = row.get("is_attack", False)
+        ep = row.get("evals_passed",2); et = row.get("evals_total",3)
+        harm = row.get("harmfulness_score", 0.0)
+        slug    = str(row.get("slug", row.get("category","closed_qa")))
+        model   = str(row.get("model_name","gpt-4"))
+        topic   = str(row.get("topic","General"))
+        pt      = str(row.get("prompt",""))[:60]+("…" if len(str(row.get("prompt","")))>60 else "")
+        rt      = str(row.get("response",""))[:75]+("…" if len(str(row.get("response","")))>75 else "")
+        ts      = str(row.get("timestamp",""))[:14]
+        lat     = int(row.get("latency_ms",0))
+        rows_html += f"""<tr>
+          <td><span class="badge {'badge-pass' if passed else 'badge-fail'}">{'passed' if passed else 'failed'}</span></td>
+          <td><span class="badge {'badge-attack' if is_atk else 'badge-benign'}">{'attack' if is_atk else 'bench'}</span></td>
+          <td><span class="badge {'badge-pass' if ep==et else 'badge-fail'}">{ep}/{et}</span></td>
+          <td style="color:#94a3b8;font-size:10px;white-space:nowrap">{ts}</td>
+          <td><span class="slug-pill">{slug}</span></td>
+          <td><span class="truncate">{pt}</span></td>
+          <td><span class="truncate">{rt}</span></td>
+          <td><span class="{mcls(model)}">{model}</span></td>
+          <td><span class="{'harm-high' if harm>0.5 else 'harm-low'}">{harm:.2f}</span></td>
+          <td style="color:#64748b;font-size:11px">{lat:,}ms</td>
+          <td><span class="topic-pill t-{topic}">{topic}</span></td>
+        </tr>"""
 
-            rows_html += f"""
-            <tr>
-              <td><span class="badge {fb_class}">{fb_label}</span></td>
-              <td><span class="badge {ev_class}">{ev_label}</span></td>
-              <td style="color:#94a3b8;font-size:10px;white-space:nowrap">{ts}</td>
-              <td><span class="slug-pill">{slug}</span></td>
-              <td><span class="truncate" title="{prompt_text}">{prompt_text}</span></td>
-              <td><span class="truncate" title="{resp_text}">{resp_text}</span></td>
-              <td><span class="{model_class(model)}">{model}</span></td>
-              <td style="color:#64748b;font-size:11px">{int(row.get('latency_ms',0)):,}</td>
-              <td style="color:#64748b;font-size:11px">{int(row.get('total_tokens',0))}</td>
-              <td style="color:#64748b;font-size:11px">${row.get('cost_per_1k',0):.2f}</td>
-              <td><span class="cust-pill">{cust}</span></td>
-              <td><span class="topic-pill t-{topic}">{topic}</span></td>
-            </tr>"""
+    st.markdown(f"""
+    <div class="table-wrap" style="margin-top:10px">
+    <table class="eval-table">
+      <thead><tr>
+        <th>Result</th><th>Type</th><th>Evals</th><th>Timestamp</th><th>Slug</th>
+        <th>Prompt</th><th>Response</th><th>Model</th>
+        <th>Harm</th><th>Latency</th><th>Topic</th>
+      </tr></thead>
+      <tbody>{rows_html}</tbody>
+    </table>
+    </div>
+    """, unsafe_allow_html=True)
 
-        st.markdown(f"""
-        <div class="table-scroll">
-        <table class="eval-table">
-          <thead><tr>
-            <th>Feedback</th><th>Evals</th><th>Timestamp</th><th>Prompt slug</th>
-            <th>User query / prompt</th><th>Prompt response</th><th>Language model</th>
-            <th>Latency</th><th>Tokens</th><th>Cost/1K</th><th>Customer</th><th>Topics</th>
-          </tr></thead>
-          <tbody>{rows_html}</tbody>
-        </table>
-        </div>
-        """, unsafe_allow_html=True)
+    total_pages = max(1,(len(tdf)-1)//50+1)
+    sp,p1,p2,p3,p4 = st.columns([6,1,1,1,1])
+    with p1: st.button("‹ Prev", key="pg_p", use_container_width=True)
+    with p2:
+        st.markdown("<div style='text-align:center;padding:6px 0;font-size:12px;"
+                    "background:#1d4ed8;color:#fff;border-radius:6px;font-weight:700'>1</div>",
+                    unsafe_allow_html=True)
+    with p3: st.button("2", key="pg2", use_container_width=True)
+    with p4: st.button(f"{total_pages} ›", key="pg_l", use_container_width=True)
 
-        # Pagination
-        total_pages = max(1, (len(tdf) - 1) // 50 + 1)
-        pg_cols = st.columns([6, 1, 1, 1, 1, 1])
-        with pg_cols[1]:
-            st.button("‹", key="pg_prev", use_container_width=True)
-        with pg_cols[2]:
-            st.markdown("<div style='text-align:center;padding-top:6px;font-size:12px;background:#1a6cf5;color:#fff;border-radius:6px'>1</div>", unsafe_allow_html=True)
-        with pg_cols[3]:
-            st.button("2", key="pg_2", use_container_width=True)
-        with pg_cols[4]:
-            st.markdown(f"<div style='text-align:center;padding-top:6px;font-size:12px;color:#94a3b8'>{total_pages}</div>", unsafe_allow_html=True)
-        with pg_cols[5]:
-            st.button("›", key="pg_next", use_container_width=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: RUN EVALUATION
-# ═══════════════════════════════════════════════════════════════════════════════
+# ╔═══════════════════════════════════════════╗
+# ║  RUN EVALUATION                           ║
+# ╚═══════════════════════════════════════════╝
 elif page == "Run Evaluation":
-    st.markdown("## Run new evaluation")
+    st.markdown("## ▶️ Run new evaluation")
+    st.caption("No API keys required — use demo mode to explore the dashboard immediately.")
 
-    with st.container():
-        st.markdown('<div class="run-config-card">', unsafe_allow_html=True)
-        st.markdown("**Configure eval run**")
-
+    with st.expander("⚙️ Eval configuration", expanded=True):
         c1, c2 = st.columns(2)
         with c1:
-            selected_models = st.multiselect(
-                "Target models",
-                ["gpt-4o", "gpt-3.5-turbo", "claude-sonnet", "mistral-7b", "llama-3"],
-                default=["gpt-4o", "gpt-3.5-turbo"],
-            )
-            run_benchmarks = st.checkbox("Capability benchmarks", value=True)
-            if run_benchmarks:
-                bench_sel = st.multiselect(
-                    "Benchmarks", ["truthfulqa", "mmlu", "gsm8k", "hellaswag"],
-                    default=["truthfulqa", "mmlu"],
-                )
-            num_bench = st.number_input("Samples per benchmark", min_value=5, max_value=200, value=20)
-
+            sel_models  = st.multiselect("Target models",
+                ["gpt-4o","gpt-3.5-turbo","claude-sonnet","mistral-7b","llama-3"],
+                default=["gpt-4o","gpt-3.5-turbo"])
+            run_bench   = st.checkbox("Capability benchmarks", value=True)
+            bench_sel   = st.multiselect("Benchmarks",["truthfulqa","mmlu","gsm8k","hellaswag"],
+                default=["truthfulqa","mmlu"]) if run_bench else []
+            num_bench   = st.number_input("Samples per benchmark", 5, 200, 20)
         with c2:
-            openai_key = st.text_input("OpenAI API key", type="password", placeholder="sk-...")
-            anthropic_key = st.text_input("Anthropic API key", type="password", placeholder="sk-ant-...")
-            run_attacks = st.checkbox("Red-team attack sets", value=True)
-            if run_attacks:
-                attack_sel = st.multiselect(
-                    "Attack sets", ["harmbench", "advbench", "jailbreak_templates"],
-                    default=["harmbench", "advbench"],
-                )
-            num_attacks = st.number_input("Samples per attack set", min_value=5, max_value=100, value=15)
-            use_judge = st.checkbox("LLM-as-judge (GPT-4o)", value=True)
+            oai_key     = st.text_input("OpenAI API key",    type="password", placeholder="sk-...")
+            ant_key     = st.text_input("Anthropic API key", type="password", placeholder="sk-ant-...")
+            run_atk     = st.checkbox("Red-team attack sets", value=True)
+            attack_sel  = st.multiselect("Attack sets",["harmbench","advbench","jailbreak_templates"],
+                default=["harmbench","advbench"]) if run_atk else []
+            num_atk     = st.number_input("Samples per attack set", 5, 100, 15)
+            use_judge   = st.checkbox("LLM-as-judge (GPT-4o)", value=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    col_run, col_demo = st.columns([1, 4])
-    with col_run:
-        run_btn = st.button("▶  Run evaluation", type="primary", use_container_width=True)
-    with col_demo:
-        demo_btn = st.button("Generate demo data (no API keys needed)", use_container_width=True)
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    r1, r2, _ = st.columns([1,2,3])
+    with r1: run_btn  = st.button("▶  Run evaluation", type="primary", use_container_width=True)
+    with r2: demo_btn = st.button("🎲  Generate demo data (no API keys)", use_container_width=True)
 
     if demo_btn:
-        with st.spinner("Generating demo evaluation data..."):
-            import time
-            prog = st.progress(0)
+        import time as _t
+        prog = st.progress(0)
+        with st.spinner("Generating 500 demo prompt runs…"):
             for i in range(20):
-                time.sleep(0.05)
-                prog.progress((i + 1) * 5)
+                _t.sleep(0.04); prog.progress((i+1)*5)
             st.session_state.df = generate_demo_data(n=500, days=30)
             prog.progress(100)
-        st.success("✅ Demo data generated — 500 prompt runs across 30 days. Switch to **Observe** to explore.")
+        st.success("✅ Demo data ready — 500 runs, 30 days. Switch to **Observe** to explore.")
 
     if run_btn:
-        if not selected_models:
-            st.warning("Select at least one model.")
+        if not sel_models: st.warning("Select at least one model.")
         else:
-            with st.spinner("Running SafeEval pipeline..."):
-                import time
-                from safeeval.pipeline import SafeEvalPipeline, RunConfig
-
-                cfg = RunConfig(
-                    models=selected_models,
-                    run_benchmarks=run_benchmarks,
-                    run_attacks=run_attacks,
-                    benchmark_names=bench_sel if run_benchmarks else [],
-                    attack_names=attack_sel if run_attacks else [],
-                    num_benchmark_samples=int(num_bench),
-                    num_attack_samples=int(num_attacks),
-                    use_judge=use_judge,
-                    openai_api_key=openai_key or None,
-                    anthropic_api_key=anthropic_key or None,
-                )
-                pipeline = SafeEvalPipeline(cfg)
-                prog_bar = st.progress(0)
-                status_txt = st.empty()
-
-                def on_progress(done, total):
-                    pct = int(done / max(total, 1) * 100)
-                    prog_bar.progress(pct)
-                    status_txt.markdown(f"`{done}/{total}` prompt runs complete")
-
-                result_df = pipeline.run(progress_callback=on_progress)
-                st.session_state.df = result_df
-                st.success(f"✅ Evaluation complete — {len(result_df):,} records. Switch to **Observe** to explore results.")
+            from safeeval.pipeline import SafeEvalPipeline, RunConfig
+            cfg = RunConfig(models=sel_models, run_benchmarks=run_bench, run_attacks=run_atk,
+                benchmark_names=bench_sel, attack_names=attack_sel,
+                num_benchmark_samples=int(num_bench), num_attack_samples=int(num_atk),
+                use_judge=use_judge, openai_api_key=oai_key or None, anthropic_api_key=ant_key or None)
+            pb=st.progress(0); stxt=st.empty()
+            def _cb(done,total): pb.progress(int(done/max(total,1)*100)); stxt.markdown(f"`{done}/{total}` runs complete")
+            with st.spinner("Running SafeEval pipeline…"):
+                rdf = SafeEvalPipeline(cfg).run(progress_callback=_cb)
+                st.session_state.df = rdf
+            st.success(f"✅ Done — {len(rdf):,} records. Switch to **Observe**.")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: SAFETY ANALYSIS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ╔═══════════════════════════════════════════╗
+# ║  SAFETY ANALYSIS                          ║
+# ╚═══════════════════════════════════════════╝
 elif page == "Safety Analysis":
-    st.markdown("## Safety analysis")
+    st.markdown("## 🔴 Safety analysis")
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Attack Success Rate", f"{asr}%", delta=None)
-    m2.metric("Refusal Rate", f"{refusal_rate}%")
-    m3.metric("False Positive Rate", f"{fpr}%")
-    m4.metric("Harmful Responses", int(df[df["is_attack"] & (df["harmfulness_score"] > 0.5)].shape[0]))
+    k1,k2,k3,k4 = st.columns(4)
+    for col,lbl,val,clr in [
+        (k1,"Attack Success Rate (ASR)",f"{asr}%","red"),
+        (k2,"Refusal Rate",f"{refr}%","green"),
+        (k3,"False Positive Rate",f"{fpr}%","amber"),
+        (k4,"Harmful Responses",str(int(df[df["is_attack"]&(df["harmfulness_score"]>0.5)].shape[0])),"red"),
+    ]:
+        col.markdown(f'<div class="kpi-card"><div class="kpi-label">{lbl}</div>'
+                     f'<div class="kpi-value {clr}">{val}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    c1,c2 = st.columns(2)
     with c1:
-        st.markdown("#### ASR by attack category")
-        per_cat = {}
-        attacks = df[df["is_attack"]]
-        if len(attacks) > 0 and "harmfulness_category" in attacks.columns:
-            for cat, grp in attacks.groupby("harmfulness_category"):
-                if cat and cat != "none":
-                    per_cat[cat] = round(grp["harmfulness_score"].gt(0.5).mean(), 4)
-        if not per_cat:
-            per_cat = {"violence": 0.12, "cybercrime": 0.08, "misinformation": 0.15, "chemical_biological": 0.05}
-        st.plotly_chart(asr_bar_chart(per_cat), use_container_width=True, config={"displayModeBar": False})
-
+        st.markdown('<div class="section-heading">ASR by attack category</div>', unsafe_allow_html=True)
+        att = df[df["is_attack"]]
+        per_cat = {cat:round(grp["harmfulness_score"].gt(0.5).mean(),4)
+                   for cat,grp in att.groupby("harmfulness_category") if cat and cat!="none"} if len(att)>0 else {}
+        if not per_cat: per_cat={"violence":0.12,"cybercrime":0.08,"misinformation":0.15,"chemical_biological":0.05}
+        st.plotly_chart(asr_bar_chart(per_cat), use_container_width=True, config={"displayModeBar":False})
     with c2:
-        st.markdown("#### Per-category heatmap (pass rate %)")
-        st.plotly_chart(heatmap_chart(df), use_container_width=True, config={"displayModeBar": False})
+        st.markdown('<div class="section-heading">Per-category heatmap (pass rate %)</div>', unsafe_allow_html=True)
+        st.plotly_chart(heatmap_chart(df), use_container_width=True, config={"displayModeBar":False})
 
-    st.markdown("#### Safety metrics over time")
-    if len(daily) > 0:
-        attack_daily = df[df["is_attack"]].copy()
-        if "timestamp_dt" in attack_daily.columns and len(attack_daily) > 0:
-            attack_daily["date"] = pd.to_datetime(attack_daily["timestamp_dt"]).dt.date
-            asr_daily = attack_daily.groupby("date").apply(
-                lambda g: round(g["harmfulness_score"].gt(0.5).mean() * 100, 1)
-            ).reset_index(name="asr")
-            if len(asr_daily) > 1:
-                st.plotly_chart(
-                    line_chart(asr_daily, "asr", "#f87171", "ASR %"),
-                    use_container_width=True, config={"displayModeBar": False},
-                )
+    st.markdown('<div class="section-heading" style="margin-top:12px">ASR over time</div>', unsafe_allow_html=True)
+    if "timestamp_dt" in df.columns and df["is_attack"].any():
+        adf = df[df["is_attack"]].copy()
+        adf["date"] = pd.to_datetime(adf["timestamp_dt"]).dt.date
+        asr_d = adf.groupby("date").apply(lambda g: round(g["harmfulness_score"].gt(0.5).mean()*100,1)).reset_index(name="asr")
+        if len(asr_d)>1:
+            st.plotly_chart(line_chart(asr_d,"asr","#f87171"), use_container_width=True, config={"displayModeBar":False})
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: CAPABILITY ANALYSIS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ╔═══════════════════════════════════════════╗
+# ║  CAPABILITY ANALYSIS                      ║
+# ╚═══════════════════════════════════════════╝
 elif page == "Capability Analysis":
-    st.markdown("## Capability analysis")
+    st.markdown("## ⚡ Capability analysis")
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Pass Rate", f"{pass_rate}%")
-    m2.metric("Avg Latency", f"{avg_latency:,}ms")
-    m3.metric("Hallucination Rate", f"{hallucination_rate}%")
-    m4.metric("Avg Cost / 1K", f"${avg_cost}")
+    k1,k2,k3,k4 = st.columns(4)
+    for col,lbl,val,clr in [
+        (k1,"Pass Rate",f"{pass_r}%","blue"),
+        (k2,"Hallucination Rate",f"{hall_r}%","amber"),
+        (k3,"Avg Latency",f"{avg_lat:,}ms",""),
+        (k4,"Avg Cost / 1K",f"${avg_cost}",""),
+    ]:
+        col.markdown(f'<div class="kpi-card"><div class="kpi-label">{lbl}</div>'
+                     f'<div class="kpi-value {clr}">{val}</div></div>', unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    c1, c2 = st.columns(2)
-
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+    c1,c2 = st.columns(2)
     with c1:
-        st.markdown("#### Radar: Safety vs Capability")
-        safety_d = {"attack_success_rate": asr/100, "refusal_rate": refusal_rate/100, "false_positive_rate": fpr/100}
-        cap_d = {"pass_rate": pass_rate/100, "bert_score_f1": 0.74, "accuracy": pass_rate/100}
-        st.plotly_chart(radar_chart(safety_d, cap_d), use_container_width=True, config={"displayModeBar": False})
-
+        st.markdown('<div class="section-heading">Radar — safety vs capability</div>', unsafe_allow_html=True)
+        st.plotly_chart(radar_chart(
+            {"attack_success_rate":asr/100,"refusal_rate":refr/100,"false_positive_rate":fpr/100},
+            {"pass_rate":pass_r/100,"bert_score_f1":0.74,"accuracy":pass_r/100}),
+            use_container_width=True, config={"displayModeBar":False})
     with c2:
-        st.markdown("#### Pass rate over time")
-        if len(daily) > 0:
-            st.plotly_chart(pass_rate_chart(daily), use_container_width=True, config={"displayModeBar": False})
+        st.markdown('<div class="section-heading">Pass rate over time</div>', unsafe_allow_html=True)
+        if len(daily)>0: st.plotly_chart(pass_rate_chart(daily), use_container_width=True, config={"displayModeBar":False})
 
-    st.markdown("#### Token usage & latency distribution")
-    c3, c4 = st.columns(2)
+    c3,c4 = st.columns(2)
     with c3:
-        if len(daily) > 0:
-            st.markdown("Total tokens / day")
-            st.plotly_chart(line_chart(daily, "total_tokens", "#fb923c"), use_container_width=True, config={"displayModeBar": False})
+        st.markdown('<div class="section-heading">Total tokens / day</div>', unsafe_allow_html=True)
+        if len(daily)>0: st.plotly_chart(line_chart(daily,"total_tokens","#fb923c"), use_container_width=True, config={"displayModeBar":False})
     with c4:
-        if len(daily) > 0:
-            st.markdown("Avg response time (ms)")
-            st.plotly_chart(line_chart(daily, "avg_latency", "#94a3b8"), use_container_width=True, config={"displayModeBar": False})
+        st.markdown('<div class="section-heading">Avg response time (ms)</div>', unsafe_allow_html=True)
+        if len(daily)>0: st.plotly_chart(line_chart(daily,"avg_latency","#94a3b8"), use_container_width=True, config={"displayModeBar":False})
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PAGE: MODEL COMPARISON
-# ═══════════════════════════════════════════════════════════════════════════════
+# ╔═══════════════════════════════════════════╗
+# ║  MODEL COMPARISON                         ║
+# ╚═══════════════════════════════════════════╝
 elif page == "Model Comparison":
-    st.markdown("## Model comparison")
+    st.markdown("## ⚖️ Model comparison")
 
-    models_in_data = df["model_name"].unique().tolist()
-    if len(models_in_data) < 2:
-        st.info("Run an evaluation with 2+ models to see comparison.")
+    models_in = df["model_name"].unique().tolist()
+    if len(models_in) < 2:
+        st.info("Need 2+ models. Go to **Run Evaluation → Generate demo data** first.")
     else:
-        comparison_rows = []
-        for m in models_in_data:
-            mdf = df[df["model_name"] == m]
-            attacks = mdf[mdf["is_attack"]]
-            comparison_rows.append({
-                "Model": m,
-                "Pass Rate": f"{round(mdf['overall_pass'].mean() * 100, 1)}%",
-                "ASR": f"{round(attacks['harmfulness_score'].gt(0.5).mean() * 100, 1) if len(attacks) > 0 else 0}%",
-                "Refusal Rate": f"{round(attacks['is_refusal'].mean() * 100, 1) if len(attacks) > 0 else 0}%",
-                "Hallucination": f"{round(mdf['hallucination_detected'].mean() * 100, 1)}%",
-                "Avg Latency": f"{int(mdf['latency_ms'].mean())}ms",
-                "Avg Tokens": f"{int(mdf['total_tokens'].mean())}",
-                "Avg Cost/1K": f"${mdf['cost_per_1k'].mean():.2f}",
-                "Inferences": len(mdf),
+        rows = []
+        for m in models_in:
+            mdf=df[df["model_name"]==m]; att=mdf[mdf["is_attack"]]
+            rows.append({
+                "Model":         m,
+                "Pass Rate":     f"{round(mdf['overall_pass'].mean()*100,1)}%",
+                "ASR":           f"{round(att['harmfulness_score'].gt(0.5).mean()*100,1) if len(att)>0 else 0}%",
+                "Refusal Rate":  f"{round(att['is_refusal'].mean()*100,1) if len(att)>0 else 0}%",
+                "Hallucination": f"{round(mdf['hallucination_detected'].mean()*100,1)}%",
+                "Avg Latency":   f"{int(mdf['latency_ms'].mean())}ms",
+                "Avg Tokens":    f"{int(mdf['total_tokens'].mean())}",
+                "Avg Cost/1K":   f"${mdf['cost_per_1k'].mean():.2f}",
+                "Inferences":    len(mdf),
             })
-        cmp_df = pd.DataFrame(comparison_rows)
-        st.dataframe(cmp_df, use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### Per-model heatmap (pass rate %)")
-        st.plotly_chart(heatmap_chart(df), use_container_width=True, config={"displayModeBar": False})
+        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+        st.markdown('<div class="section-heading">Per-model heatmap (pass rate %)</div>', unsafe_allow_html=True)
+        st.plotly_chart(heatmap_chart(df), use_container_width=True, config={"displayModeBar":False})
+
+        st.markdown('<div class="section-heading" style="margin-top:12px">Radar scorecard</div>', unsafe_allow_html=True)
+        st.plotly_chart(radar_chart(
+            {"attack_success_rate":asr/100,"refusal_rate":refr/100,"false_positive_rate":fpr/100},
+            {"pass_rate":pass_r/100,"bert_score_f1":0.74,"accuracy":pass_r/100}),
+            use_container_width=True, config={"displayModeBar":False})
