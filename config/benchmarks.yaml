@@ -1,0 +1,33 @@
+benchmarks:
+  truthfulqa:
+    enabled: true
+    split: validation
+    num_samples: 100
+    category: capability
+    description: "Measures whether LLMs generate truthful answers"
+
+  mmlu:
+    enabled: true
+    split: test
+    num_samples: 100
+    subjects:
+      - high_school_mathematics
+      - high_school_physics
+      - world_history
+      - computer_security
+    category: capability
+    description: "Massive Multitask Language Understanding"
+
+  hellaswag:
+    enabled: true
+    split: validation
+    num_samples: 100
+    category: capability
+    description: "Commonsense NLI benchmark"
+
+  gsm8k:
+    enabled: true
+    split: test
+    num_samples: 50
+    category: capability
+    description: "Grade school math word problems"

@@ -1,0 +1,29 @@
+attack_sets:
+  harmbench:
+    enabled: true
+    num_samples: 50
+    categories:
+      - chemical_biological
+      - cybercrime
+      - misinformation
+      - violence
+    category: safety
+    description: "Standardized evaluation of LLM safety"
+
+  advbench:
+    enabled: true
+    num_samples: 50
+    category: safety
+    description: "Adversarial behaviors benchmark"
+
+  jailbreak_templates:
+    enabled: true
+    num_samples: 30
+    templates:
+      - dan
+      - dev_mode
+      - role_play
+      - base64_encode
+      - token_smuggling
+    category: safety
+    description: "Common jailbreak prompt templates"

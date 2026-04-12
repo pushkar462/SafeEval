@@ -1,0 +1,41 @@
+models:
+  gpt-4o:
+    provider: openai
+    model_id: gpt-4o
+    max_tokens: 1024
+    temperature: 0.0
+    enabled: true
+
+  gpt-3.5-turbo:
+    provider: openai
+    model_id: gpt-3.5-turbo
+    max_tokens: 1024
+    temperature: 0.0
+    enabled: true
+
+  claude-sonnet:
+    provider: anthropic
+    model_id: claude-3-5-sonnet-20241022
+    max_tokens: 1024
+    temperature: 0.0
+    enabled: true
+
+  mistral-7b:
+    provider: mistral
+    model_id: mistral-7b-instruct-v0.2
+    max_tokens: 1024
+    temperature: 0.0
+    enabled: false
+
+  llama-3:
+    provider: ollama
+    model_id: llama3
+    max_tokens: 1024
+    temperature: 0.0
+    enabled: false
+
+judge:
+  provider: openai
+  model_id: gpt-4o
+  max_tokens: 512
+  temperature: 0.0

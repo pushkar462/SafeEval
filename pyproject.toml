@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "safeeval"
+version = "0.1.0"
+description = "Four-layer LLM safety and capability evaluation framework"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "streamlit>=1.35",
+    "plotly>=5.22",
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "openai>=1.30",
+    "anthropic>=0.28",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "tqdm>=4.66",
+    "rich>=13.7",
+    "click>=8.1",
+    "nltk>=3.8",
+    "requests>=2.32",
+    "tenacity>=8.3",
+]
+
+[project.scripts]
+safeeval = "scripts.run_eval:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
