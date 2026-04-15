@@ -196,12 +196,54 @@ div[data-baseweb="menu"] [role="option"]:hover {
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] { background: #0f172a !important; border-right: none !important; }
+/* Keep Streamlit header/sidebar header visible so the open/close sidebar control never disappears. */
+header[data-testid="stHeader"] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+[data-testid="stSidebarHeader"] {
+  background: transparent !important;
+}
+
+/* Remove Streamlit's sidebar header (collapse chevrons etc.) so SafeEval sits at the top. */
 [data-testid="stSidebarHeader"] { display: none !important; }
-header[data-testid="stHeader"] { display: none !important; }
+
+/* Remove extra top space above the sidebar title/logo (varies by Streamlit version). */
+[data-testid="stSidebar"] > div:first-child,
+[data-testid="stSidebar"] [data-testid="stSidebarUserContent"],
+[data-testid="stSidebar"] [data-testid="stSidebarContent"],
+[data-testid="stSidebar"] section {
+  padding-top: 0.2cm !important;
+  margin-top: 0 !important;
+}
+[data-testid="stSidebar"] h3 {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Never let the sidebar collapse (some browsers persist a collapsed state). */
+[data-testid="stSidebar"] {
+  width: 16rem !important;
+  min-width: 16rem !important;
+  max-width: 16rem !important;
+  transform: none !important;
+  margin-left: 0 !important;
+}
+[data-testid="stSidebar"][aria-expanded="false"] {
+  width: 16rem !important;
+  min-width: 16rem !important;
+  max-width: 16rem !important;
+  transform: none !important;
+  margin-left: 0 !important;
+}
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] .stMarkdown div,
 [data-testid="stSidebar"] label { color: #94a3b8 !important; font-size: 16px !important; }
-[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 26px !important; }
+[data-testid="stSidebar"] h3 {
+  color: #f1f5f9 !important;
+  font-size: 34px !important;
+  line-height: 1.05 !important;
+}
 
 /* Sidebar nav buttons */
 [data-testid="stSidebar"] .stButton > button {
