@@ -9,6 +9,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+import plotly.graph_objects as go
 
 from dashboard.data_loader import load_results, generate_demo_data, get_daily_stats
 from dashboard.charts.timeseries import (
@@ -50,6 +51,22 @@ div[role="option"],
 li[role="option"] {
   cursor: pointer !important;
 }
+
+/* Streamlit dataframes should stay light + readable in main area */
+section.main [data-testid="stDataFrame"],
+div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  /* Glide Data Grid theme vars (Streamlit st.dataframe) */
+  --gdg-bg-cell: #ffffff;
+  --gdg-bg-cell-medium: #f8fafc;
+  --gdg-bg-header: #f1f5f9;
+  --gdg-border-color: #e2e8f0;
+  --gdg-text-dark: #0f172a;
+  --gdg-text-medium: #334155;
+  --gdg-text-light: #475569;
+}
+/* Avoid forcing background-color on all descendants (can blank canvas grids) */
 
 /* ── Main area typography (white bg → dark readable text) ──
    Streamlit markup varies by version; target main section + main block container. */
@@ -353,10 +370,43 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
   color: #fff !important;
 }
 
+/* Streamlit's newer buttons use data-testid instead of [kind] */
+section.main button[data-testid*="primary"],
+div[data-testid="stMainBlockContainer"] button[data-testid*="primary"],
+section.main button[kind="primary"],
+div[data-testid="stMainBlockContainer"] button[kind="primary"] {
+  background: #1d4ed8 !important;
+  border: 1px solid #1d4ed8 !important;
+  color: #ffffff !important;
+}
+section.main button[data-testid*="secondary"],
+div[data-testid="stMainBlockContainer"] button[data-testid*="secondary"],
+section.main button[kind="secondary"],
+div[data-testid="stMainBlockContainer"] button[kind="secondary"] {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+section.main button[data-testid="baseButton-secondary"]:hover,
+div[data-testid="stMainBlockContainer"] button[data-testid="baseButton-secondary"]:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Make sure button label is visible even without hover */
+section.main button[data-testid*="primary"] *,
+section.main button[data-testid*="secondary"] *,
+div[data-testid="stMainBlockContainer"] button[data-testid*="primary"] *,
+div[data-testid="stMainBlockContainer"] button[data-testid*="secondary"] * {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 /* ── Topbar ── */
 .topbar {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-  padding: 10px 16px; font-size: 15px; color: #64748b;
+  padding: 10px 16px; font-size: 17px; color: #64748b;
   display: flex; align-items: center; gap: 12px;
 }
 .topbar b { color: #1e293b; }
@@ -364,7 +414,7 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
   display: inline-flex; align-items: center; gap: 5px;
   background: #f0f7ff; border: 1px solid #bfdbfe;
   border-radius: 20px; padding: 3px 12px;
-  font-size: 12px; font-weight: 600; color: #1d4ed8;
+  font-size: 14px; font-weight: 700; color: #1d4ed8;
   margin-left: auto;
 }
 .model-dot { width: 7px; height: 7px; border-radius: 50%; }
@@ -760,29 +810,67 @@ elif page == "Run Evaluation":
     st.markdown("## ▶️ Run new evaluation")
     st.caption("No API keys required — use demo mode to explore the dashboard immediately.")
 
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
     with st.expander("⚙️ Eval configuration", expanded=True):
-        c1, c2 = st.columns(2)
-        with c1:
-            sel_models  = st.multiselect("Target models",
-                ["gpt-4o","gpt-3.5-turbo","claude-sonnet","mistral-7b","llama-3"],
-                default=["gpt-4o","gpt-3.5-turbo"])
-            run_bench   = st.checkbox("Capability benchmarks", value=True)
-            bench_sel   = st.multiselect("Benchmarks",["truthfulqa","mmlu","gsm8k","hellaswag"],
-                default=["truthfulqa","mmlu"]) if run_bench else []
-            num_bench   = st.number_input("Samples per benchmark", 5, 200, 20)
-        with c2:
-            oai_key     = st.text_input("OpenAI API key",    type="password", placeholder="sk-...")
-            ant_key     = st.text_input("Anthropic API key", type="password", placeholder="sk-ant-...")
-            run_atk     = st.checkbox("Red-team attack sets", value=True)
-            attack_sel  = st.multiselect("Attack sets",["harmbench","advbench","jailbreak_templates"],
-                default=["harmbench","advbench"]) if run_atk else []
-            num_atk     = st.number_input("Samples per attack set", 5, 100, 15)
-            use_judge   = st.checkbox("LLM-as-judge (GPT-4o)", value=True)
+        with st.form("run_eval_form", clear_on_submit=False):
+            left, right = st.columns(2, gap="large")
 
-    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-    r1, r2, _ = st.columns([1,2,3])
-    with r1: run_btn  = st.button("▶  Run evaluation", type="primary", use_container_width=True)
-    with r2: demo_btn = st.button("🎲  Generate demo data (no API keys)", use_container_width=True)
+            with left:
+                st.markdown('<div class="section-heading">Models</div>', unsafe_allow_html=True)
+                sel_models = st.multiselect(
+                    "Target models",
+                    ["gpt-4o", "gpt-3.5-turbo", "claude-sonnet", "mistral-7b", "llama-3"],
+                    default=["gpt-4o", "gpt-3.5-turbo"],
+                )
+
+                st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+                st.markdown('<div class="section-heading">Benchmarks</div>', unsafe_allow_html=True)
+                run_bench = st.toggle("Run capability benchmarks", value=True)
+                bench_sel = (
+                    st.multiselect(
+                        "Benchmarks",
+                        ["truthfulqa", "mmlu", "gsm8k", "hellaswag"],
+                        default=["truthfulqa", "mmlu"],
+                    )
+                    if run_bench
+                    else []
+                )
+                num_bench = st.number_input("Samples per benchmark", 5, 200, 20)
+
+            with right:
+                st.markdown('<div class="section-heading">API keys</div>', unsafe_allow_html=True)
+                oai_key = st.text_input("OpenAI API key", type="password", placeholder="sk-...")
+                ant_key = st.text_input("Anthropic API key", type="password", placeholder="sk-ant-...")
+
+                st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+                st.markdown('<div class="section-heading">Attacks</div>', unsafe_allow_html=True)
+                run_atk = st.toggle("Run red-team attack sets", value=True)
+                attack_sel = (
+                    st.multiselect(
+                        "Attack sets",
+                        ["harmbench", "advbench", "jailbreak_templates"],
+                        default=["harmbench", "advbench"],
+                    )
+                    if run_atk
+                    else []
+                )
+                num_atk = st.number_input("Samples per attack set", 5, 100, 15)
+                use_judge = st.toggle("LLM-as-judge (GPT-4o)", value=True)
+
+            st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+            a1, a2, a3 = st.columns([1.4, 1.8, 3])
+            with a1:
+                run_btn = st.form_submit_button("▶  Run evaluation", type="primary", use_container_width=True)
+            with a2:
+                demo_btn = st.form_submit_button("🎲  Generate demo data", use_container_width=True)
+            with a3:
+                st.markdown(
+                    "<div style='color:#64748b;font-size:14px;padding-top:10px'>"
+                    "Tip: Click <b>Generate demo data</b> to explore the dashboard without keys."
+                    "</div>",
+                    unsafe_allow_html=True,
+                )
+    st.markdown("</div>", unsafe_allow_html=True)
 
     if demo_btn:
         import time as _t
@@ -891,32 +979,109 @@ elif page == "Capability Analysis":
 elif page == "Model Comparison":
     st.markdown("## ⚖️ Model comparison")
 
-    models_in = df["model_name"].unique().tolist()
-    if len(models_in) < 2:
-        st.info("Need 2+ models. Go to **Run Evaluation → Generate demo data** first.")
+    # Build a comparison pool that ignores the sidebar "Result" filter and does NOT
+    # depend on sidebar "Model" selection (otherwise you frequently end up with 1 model).
+    pool = df_all.copy()
+    if "timestamp_dt" in pool.columns:
+        pool["timestamp_dt"] = pd.to_datetime(pool["timestamp_dt"], errors="coerce")
+        cutoff = datetime.now() - timedelta(days=days_back)
+        pool = pool[pool["timestamp_dt"] >= cutoff].copy()
+    if topic_filter:
+        pool = pool[pool["topic"].isin(topic_filter)]
+
+    model_opts = sorted([m for m in pool["model_name"].dropna().unique().tolist() if m])
+    if len(model_opts) < 2:
+        st.info("Need 2+ models in the current time/topic selection. Generate demo data or widen filters.")
     else:
-        rows = []
-        for m in models_in:
-            mdf=df[df["model_name"]==m]; att=mdf[mdf["is_attack"]]
-            rows.append({
-                "Model":         m,
-                "Pass Rate":     f"{round(mdf['overall_pass'].mean()*100,1)}%",
-                "ASR":           f"{round(att['harmfulness_score'].gt(0.5).mean()*100,1) if len(att)>0 else 0}%",
-                "Refusal Rate":  f"{round(att['is_refusal'].mean()*100,1) if len(att)>0 else 0}%",
-                "Hallucination": f"{round(mdf['hallucination_detected'].mean()*100,1)}%",
-                "Avg Latency":   f"{int(mdf['latency_ms'].mean())}ms",
-                "Avg Tokens":    f"{int(mdf['total_tokens'].mean())}",
-                "Avg Cost/1K":   f"${mdf['cost_per_1k'].mean():.2f}",
-                "Inferences":    len(mdf),
-            })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        default_sel = model_opts[: min(3, len(model_opts))]
+        sel_models = st.multiselect("Compare models", model_opts, default=default_sel, key="cmp_models")
+        comp = pool[pool["model_name"].isin(sel_models)].copy() if sel_models else pool.copy()
 
-        st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-        st.markdown('<div class="section-heading">Per-model heatmap (pass rate %)</div>', unsafe_allow_html=True)
-        st.plotly_chart(heatmap_chart(df), use_container_width=True, config={"displayModeBar":False})
+        if comp["model_name"].nunique() < 2:
+            st.warning("Select at least 2 models to compare.")
+        else:
+            rows = []
+            per_model_metrics = {}
+            for m in sorted(comp["model_name"].unique().tolist()):
+                mdf = comp[comp["model_name"] == m]
+                att = mdf[mdf["is_attack"] == True]
+                ben = mdf[mdf["is_attack"] == False]
 
-        st.markdown('<div class="section-heading" style="margin-top:12px">Radar scorecard</div>', unsafe_allow_html=True)
-        st.plotly_chart(radar_chart(
-            {"attack_success_rate":asr/100,"refusal_rate":refr/100,"false_positive_rate":fpr/100},
-            {"pass_rate":pass_r/100,"bert_score_f1":0.74,"accuracy":pass_r/100}),
-            use_container_width=True, config={"displayModeBar":False})
+                pass_rate = float(mdf["overall_pass"].mean()) if len(mdf) else 0.0
+                asr_m = float(att["harmfulness_score"].gt(0.5).mean()) if len(att) else 0.0
+                refusal_m = float(att["is_refusal"].mean()) if len(att) else 0.0
+                benign_hall_m = float(ben["hallucination_detected"].mean()) if len(ben) else 0.0
+                truth_m = float(mdf["truthfulness_score"].mean()) if "truthfulness_score" in mdf.columns and len(mdf) else 0.0
+
+                rows.append({
+                    "Model":         m,
+                    "Pass Rate":     f"{round(pass_rate * 100, 1)}%",
+                    "ASR":           f"{round(asr_m * 100, 1)}%",
+                    "Refusal Rate":  f"{round(refusal_m * 100, 1)}%",
+                    "Benign Halluc.":f"{round(benign_hall_m * 100, 1)}%",
+                    "Truthfulness":  f"{round(truth_m * 100, 1)}%" if truth_m else "—",
+                    "Avg Latency":   f"{int(mdf['latency_ms'].mean())}ms",
+                    "Avg Tokens":    f"{int(mdf['total_tokens'].mean())}",
+                    "Avg Cost/1K":   f"${mdf['cost_per_1k'].mean():.2f}",
+                    "Inferences":    len(mdf),
+                })
+
+                per_model_metrics[m] = dict(
+                    pass_rate=pass_rate,
+                    asr=asr_m,
+                    refusal=refusal_m,
+                    benign_hall=benign_hall_m,
+                    truth=truth_m,
+                )
+
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
+            st.markdown('<div class="section-heading">Per-model heatmap (pass rate %)</div>', unsafe_allow_html=True)
+            st.plotly_chart(heatmap_chart(comp), use_container_width=True, config={"displayModeBar":False})
+
+            st.markdown('<div class="section-heading" style="margin-top:12px">Radar scorecard</div>', unsafe_allow_html=True)
+            cats = ["Pass Rate", "Low ASR", "Refusal Rate", "Low Benign Hall", "Truthfulness"]
+            fig = go.Figure()
+            palette = ["#1d4ed8", "#059669", "#7c3aed", "#b45309", "#dc2626"]
+            for i, (m, mm) in enumerate(per_model_metrics.items()):
+                vals = [
+                    mm["pass_rate"] * 100,
+                    (1 - mm["asr"]) * 100,
+                    mm["refusal"] * 100,
+                    (1 - mm["benign_hall"]) * 100,
+                    (mm["truth"] * 100) if mm["truth"] else 0,
+                ]
+                fig.add_trace(go.Scatterpolar(
+                    r=vals + [vals[0]],
+                    theta=cats + [cats[0]],
+                    fill="toself",
+                    fillcolor=palette[i % len(palette)].replace(")", ",0.12)").replace("rgb", "rgba"),
+                    line=dict(color=palette[i % len(palette)], width=2),
+                    name=m,
+                ))
+            fig.update_layout(
+                polar=dict(
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100],
+                        gridcolor="rgba(0,0,0,0.12)",
+                        tickfont=dict(size=13, color="#0f172a"),
+                    ),
+                    angularaxis=dict(gridcolor="rgba(0,0,0,0.12)", tickfont=dict(size=13, color="#0f172a")),
+                ),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=30, r=30, t=20, b=20),
+                height=360,
+                font=dict(color="#0f172a"),
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="left",
+                    x=0,
+                    font=dict(color="#0f172a", size=13),
+                ),
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar":False})

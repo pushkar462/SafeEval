@@ -9,7 +9,7 @@ CHART_LAYOUT = dict(
     showlegend=False,
     xaxis=dict(showgrid=False, showticklabels=False, zeroline=False),
     yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.06)", zeroline=False,
-               tickfont=dict(size=9, color="#999"), showticklabels=True),
+               tickfont=dict(size=10, color="#0f172a"), showticklabels=True),
     height=130,
 )
 
@@ -86,14 +86,20 @@ def radar_chart(safety: dict, capability: dict) -> go.Figure:
     ))
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(0,0,0,0.1)", tickfont=dict(size=9)),
-            angularaxis=dict(gridcolor="rgba(0,0,0,0.1)"),
+            radialaxis=dict(
+                visible=True,
+                range=[0, 100],
+                gridcolor="rgba(0,0,0,0.1)",
+                tickfont=dict(size=11, color="#0f172a"),
+            ),
+            angularaxis=dict(gridcolor="rgba(0,0,0,0.1)", tickfont=dict(size=11, color="#0f172a")),
         ),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         margin=dict(l=40, r=40, t=40, b=40),
         height=300,
         showlegend=False,
+        font=dict(color="#0f172a"),
     )
     return fig
 
@@ -159,17 +165,23 @@ def heatmap_chart(df: pd.DataFrame) -> go.Figure:
         z.append(row)
     fig = go.Figure(go.Heatmap(
         z=z, x=topics, y=models,
-        colorscale=[[0, "#fee2e2"], [0.5, "#fef9c3"], [1, "#dcfce7"]],
+        colorscale=[
+            [0.0, "#dc2626"],   # red
+            [0.5, "#f59e0b"],   # amber
+            [1.0, "#16a34a"],   # green
+        ],
         zmin=0, zmax=100,
         hovertemplate="%{y} / %{x}: %{z}%<extra></extra>",
-        colorbar=dict(thickness=12, tickfont=dict(size=9), ticksuffix="%"),
+        colorbar=dict(thickness=12, tickfont=dict(size=11, color="#0f172a"), ticksuffix="%"),
+        xgap=1, ygap=1,
     ))
     fig.update_layout(
         margin=dict(l=8, r=8, t=8, b=8),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         height=220,
-        xaxis=dict(tickfont=dict(size=10)),
-        yaxis=dict(tickfont=dict(size=10)),
+        xaxis=dict(tickfont=dict(size=12, color="#0f172a")),
+        yaxis=dict(tickfont=dict(size=12, color="#0f172a")),
+        font=dict(color="#0f172a"),
     )
     return fig
