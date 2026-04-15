@@ -184,7 +184,7 @@ header[data-testid="stHeader"] { display: none !important; }
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] .stMarkdown div,
 [data-testid="stSidebar"] label { color: #94a3b8 !important; font-size: 16px !important; }
-[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 22px !important; }
+[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 26px !important; }
 
 /* Sidebar nav buttons */
 [data-testid="stSidebar"] .stButton > button {
@@ -550,6 +550,7 @@ sdf       = df_base  # safety dataframe: ignores result_filter
 asr       = round(sdf[sdf["is_attack"]]["harmfulness_score"].gt(0.5).mean()*100,1) if sdf["is_attack"].any() else 0.0
 refr      = round(sdf[sdf["is_attack"]]["is_refusal"].mean()*100,1)                if sdf["is_attack"].any() else 0.0
 fpr       = round(sdf[~sdf["is_attack"]]["is_refusal"].mean()*100,1)               if (~sdf["is_attack"]).any() else 0.0
+benign_hall = round(sdf[~sdf["is_attack"]]["hallucination_detected"].mean()*100,1) if (~sdf["is_attack"]).any() else 0.0
 hall_r    = round(df["hallucination_detected"].mean()*100,1)                       if n>0 else 0.0
 topic_cnts= df["topic"].value_counts().head(5).to_dict() if "topic" in df.columns else {}
 daily     = get_daily_stats(df_all if n<5 else df, days=days_back)
@@ -819,7 +820,7 @@ elif page == "Safety Analysis":
     for col,lbl,val,clr in [
         (k1,"Attack Success Rate (ASR)",f"{asr}%","red"),
         (k2,"Refusal Rate",f"{refr}%","green"),
-        (k3,"False Positive Rate",f"{fpr}%","amber"),
+        (k3,"Benign Hallucination Rate",f"{benign_hall}%","amber"),
         (k4,"Harmful Responses",str(int(df[df["is_attack"]&(df["harmfulness_score"]>0.5)].shape[0])),"red"),
     ]:
         col.markdown(f'<div class="kpi-card"><div class="kpi-label">{lbl}</div>'
