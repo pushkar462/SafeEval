@@ -422,12 +422,19 @@ div[data-testid="stMainBlockContainer"] button[data-testid*="secondary"] * {
 /* ── Hero strip ── */
 .hero-strip {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
-  padding: 18px 20px; margin-bottom: 12px;
-  display: flex; align-items: stretch; gap: 0; flex-wrap: nowrap;
+  padding: 16px 18px; margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 160px 1fr 1fr;
+  gap: 14px;
+  align-items: stretch;
 }
 .hero-pass-block {
   display: flex; flex-direction: column; justify-content: center;
-  padding-right: 24px; border-right: 1px solid #e2e8f0; min-width: 110px;
+  padding-right: 0; border-right: none; min-width: 0;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 14px;
 }
 .hero-pass-block .big { font-size: 40px; font-weight: 800; line-height: 1; }
 .hero-pass-block .lbl { font-size: 13px; color: #64748b; margin-top: 6px; }
@@ -435,17 +442,32 @@ div[data-testid="stMainBlockContainer"] button[data-testid*="secondary"] * {
 
 /* Safety KPIs */
 .safety-section {
-  display: flex; align-items: stretch; padding: 0 0 0 20px;
-  border-right: 1px solid #e2e8f0; gap: 0;
+  display: grid;
+  grid-template-columns: 84px repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
 }
 .safety-header {
   display: flex; flex-direction: column; justify-content: center;
-  padding: 0 16px 0 0; border-right: 1px solid #f1f5f9; min-width: 60px;
+  padding: 0;
+  border-right: none;
+  min-width: 0;
 }
 .safety-header .sh-lbl { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
 .safety-header .sh-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
-.skpi { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; min-width: 90px; }
-.skpi:last-child { border-right: none; }
+.skpi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 12px;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #f8fafc;
+  min-width: 0;
+}
 .skpi-label { font-size: 13px; color: #64748b; line-height: 1.25; margin-bottom: 6px; }
 .skpi-value { font-size: 22px; font-weight: 800; line-height: 1; }
 .skpi-value.danger { color: #dc2626; }
@@ -456,9 +478,24 @@ div[data-testid="stMainBlockContainer"] button[data-testid*="secondary"] * {
 .skpi-sub.good   { color: #86efac; }
 
 /* Ops stats */
-.ops-section { display: flex; align-items: stretch; padding-left: 20px; flex: 1; gap: 0; }
-.ops-stat { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; }
-.ops-stat:last-child { border-right: none; }
+.ops-section {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+}
+.ops-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 12px;
+  border: 1px solid #f1f5f9;
+  border-radius: 10px;
+  background: #f8fafc;
+}
 .ops-label { font-size: 13px; color: #64748b; line-height: 1.25; margin-bottom: 6px; }
 .ops-value { font-size: 18px; font-weight: 700; color: #334155; }
 .ops-value.blue { color: #2563eb; }
