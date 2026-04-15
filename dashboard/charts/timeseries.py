@@ -123,8 +123,33 @@ def asr_bar_chart(per_cat: dict) -> go.Figure:
 
 
 def heatmap_chart(df: pd.DataFrame) -> go.Figure:
-    models = df["model_name"].unique().tolist()
+    if df is None or len(df) == 0 or "model_name" not in df.columns or "topic" not in df.columns:
+        fig = go.Figure()
+        fig.update_layout(
+            margin=dict(l=8, r=8, t=8, b=8),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            height=220,
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            annotations=[dict(text="No data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)],
+        )
+        return fig
+
+    models = df["model_name"].dropna().unique().tolist()
     topics = df["topic"].dropna().unique().tolist()[:6]
+    if not models or not topics:
+        fig = go.Figure()
+        fig.update_layout(
+            margin=dict(l=8, r=8, t=8, b=8),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            height=220,
+            xaxis=dict(visible=False),
+            yaxis=dict(visible=False),
+            annotations=[dict(text="No data", x=0.5, y=0.5, xref="paper", yref="paper", showarrow=False)],
+        )
+        return fig
     z = []
     for m in models:
         row = []

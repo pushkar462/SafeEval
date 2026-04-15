@@ -27,15 +27,164 @@ st.markdown("""
 <style>
 /* ── Base ── */
 html, body, [data-testid="stAppViewContainer"] { background: #f4f6fb !important; }
+/* Increase font sizes without breaking dropdown positioning (avoid `zoom`) */
+html { font-size: 145% !important; }
+
+/* Minimum readable defaults across the app */
+section.main, div[data-testid="stMainBlockContainer"] { font-size: 1.05rem !important; }
+section.main [data-testid="stMarkdownContainer"],
+div[data-testid="stMainBlockContainer"] [data-testid="stMarkdownContainer"] { font-size: 1.05rem !important; }
+section.main [data-testid="stCaptionContainer"],
+div[data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"],
+section.main small,
+div[data-testid="stMainBlockContainer"] small { font-size: 1rem !important; }
 .block-container { padding: 1rem 1.5rem 2rem !important; max-width: 100% !important; }
 #MainMenu, footer, [data-testid="stDecoration"], [data-testid="stToolbar"] { display: none !important; }
 
+/* Ensure proper pointer cursor on interactive elements */
+button,
+[role="button"],
+a,
+summary,
+div[role="option"],
+li[role="option"] {
+  cursor: pointer !important;
+}
+
+/* ── Main area typography (white bg → dark readable text) ──
+   Streamlit markup varies by version; target main section + main block container. */
+section.main,
+section.main * {
+  color: #0f172a !important;
+}
+section.main h1,
+section.main h2,
+section.main h3,
+section.main h4 {
+  color: #0b1220 !important;
+}
+section.main a { color: #1d4ed8 !important; }
+section.main [data-testid="stCaptionContainer"],
+section.main [data-testid="stCaptionContainer"] * { color: #334155 !important; }
+
+div[data-testid="stMainBlockContainer"],
+div[data-testid="stMainBlockContainer"] * {
+  color: #0f172a !important;
+}
+div[data-testid="stMainBlockContainer"] h1,
+div[data-testid="stMainBlockContainer"] h2,
+div[data-testid="stMainBlockContainer"] h3,
+div[data-testid="stMainBlockContainer"] h4 {
+  color: #0b1220 !important;
+}
+div[data-testid="stMainBlockContainer"] a { color: #1d4ed8 !important; }
+div[data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"],
+div[data-testid="stMainBlockContainer"] [data-testid="stCaptionContainer"] * { color: #334155 !important; }
+
+/* Streamlit markdown/caption containers sometimes keep light theme colors */
+section.main [data-testid="stMarkdownContainer"],
+section.main [data-testid="stMarkdownContainer"] *,
+div[data-testid="stMainBlockContainer"] [data-testid="stMarkdownContainer"],
+div[data-testid="stMainBlockContainer"] [data-testid="stMarkdownContainer"] * {
+  color: #0f172a !important;
+}
+
+/* BaseWeb inputs (selectbox/multiselect/text inputs) in main area */
+section.main [data-baseweb="input"] input,
+section.main [data-baseweb="textarea"] textarea,
+section.main [data-baseweb="select"] input,
+section.main [data-baseweb="select"] span,
+div[data-testid="stMainBlockContainer"] [data-baseweb="input"] input,
+div[data-testid="stMainBlockContainer"] [data-baseweb="textarea"] textarea,
+div[data-testid="stMainBlockContainer"] [data-baseweb="select"] input,
+div[data-testid="stMainBlockContainer"] [data-baseweb="select"] span {
+  color: #0f172a !important;
+}
+section.main [data-baseweb="select"] div,
+div[data-testid="stMainBlockContainer"] [data-baseweb="select"] div {
+  color: #0f172a !important;
+}
+
+/* Main-area control surfaces should be light (readable on white UI) */
+section.main [data-baseweb="select"] > div,
+div[data-testid="stMainBlockContainer"] [data-baseweb="select"] > div,
+section.main [data-baseweb="input"] > div,
+div[data-testid="stMainBlockContainer"] [data-baseweb="input"] > div,
+section.main [data-baseweb="textarea"] > div,
+div[data-testid="stMainBlockContainer"] [data-baseweb="textarea"] > div {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Main-area multiselect tags (chips) should be readable */
+section.main span[data-baseweb="tag"],
+div[data-testid="stMainBlockContainer"] span[data-baseweb="tag"] {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  opacity: 1 !important;
+}
+section.main span[data-baseweb="tag"] *,
+div[data-testid="stMainBlockContainer"] span[data-baseweb="tag"] * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+section.main span[data-baseweb="tag"] svg,
+section.main span[data-baseweb="tag"] svg *,
+div[data-testid="stMainBlockContainer"] span[data-baseweb="tag"] svg,
+div[data-testid="stMainBlockContainer"] span[data-baseweb="tag"] svg * {
+  fill: #0f172a !important;
+  stroke: #0f172a !important;
+}
+
+/* Dropdown option list / popovers (options list) — keep readable everywhere */
+div[role="listbox"],
+ul[role="listbox"],
+div[data-baseweb="popover"],
+div[data-baseweb="menu"] {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+div[role="listbox"] *,
+ul[role="listbox"] *,
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"] * {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+/* Some BaseWeb themes set dark backgrounds on nested wrappers; force white recursively */
+div[data-baseweb="popover"] *,
+div[data-baseweb="menu"] *,
+div[role="listbox"] *,
+ul[role="listbox"] * {
+  background-color: #ffffff !important;
+}
+div[data-baseweb="popover"] [data-baseweb="input"] > div,
+div[data-baseweb="popover"] [data-baseweb="input"] input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+div[role="option"]:hover,
+li[role="option"]:hover,
+div[data-baseweb="menu"] [role="option"]:hover {
+  background: #f1f5f9 !important;
+}
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] { background: #0f172a !important; border-right: none !important; }
+[data-testid="stSidebarHeader"] { display: none !important; }
+header[data-testid="stHeader"] { display: none !important; }
 [data-testid="stSidebar"] .stMarkdown p,
 [data-testid="stSidebar"] .stMarkdown div,
-[data-testid="stSidebar"] label { color: #94a3b8 !important; font-size: 12px !important; }
-[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 16px !important; }
+[data-testid="stSidebar"] label { color: #94a3b8 !important; font-size: 16px !important; }
+[data-testid="stSidebar"] h3 { color: #f1f5f9 !important; font-size: 22px !important; }
 
 /* Sidebar nav buttons */
 [data-testid="stSidebar"] .stButton > button {
@@ -45,12 +194,16 @@ html, body, [data-testid="stAppViewContainer"] { background: #f4f6fb !important;
   background: transparent !important;
   border: none !important;
   color: #94a3b8 !important;
-  font-size: 13px !important;
+  font-size: 18px !important;
   font-weight: 500 !important;
   padding: 9px 12px !important;
   border-radius: 8px !important;
   margin-bottom: 2px !important;
   transition: all 0.15s !important;
+}
+[data-testid="stSidebar"] .stButton > button * {
+  font-size: 18px !important;
+  line-height: 1.25 !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover {
   background: #1e293b !important;
@@ -68,10 +221,117 @@ html, body, [data-testid="stAppViewContainer"] { background: #f4f6fb !important;
   background: #1e293b !important;
   border-color: #334155 !important;
   color: #e2e8f0 !important;
-  font-size: 12px !important;
+  font-size: 16px !important;
 }
 [data-testid="stSidebar"] .stMultiSelect span[data-baseweb="tag"] {
   background: #1e3a5f !important; color: #93c5fd !important;
+}
+
+/* ── Dark headers (Expander bars etc.) should keep light text ──
+   Streamlit uses different structures across versions (details/summary vs BaseWeb accordion). */
+details[data-testid="stExpander"] > summary,
+div[data-testid="stExpander"] summary,
+div[data-testid="stExpander"] [role="button"],
+div[data-baseweb="accordion"] [role="button"] {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  border-radius: 10px !important;
+}
+details[data-testid="stExpander"] > summary,
+details[data-testid="stExpander"] > summary *,
+div[data-testid="stExpander"] summary,
+div[data-testid="stExpander"] summary *,
+div[data-testid="stExpander"] [role="button"],
+div[data-testid="stExpander"] [role="button"] *,
+div[data-baseweb="accordion"] [role="button"],
+div[data-baseweb="accordion"] [role="button"] * {
+  color: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Extra-hard override for expander headers (wins vs global `section.main *`) */
+section.main details summary,
+section.main details summary *,
+div[data-testid="stMainBlockContainer"] details summary,
+div[data-testid="stMainBlockContainer"] details summary * {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  opacity: 1 !important;
+}
+section.main details summary,
+div[data-testid="stMainBlockContainer"] details summary {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+
+/* Number input steppers (+ / -) should be visible */
+section.main button[aria-label="Increment"],
+section.main button[aria-label="Decrement"],
+div[data-testid="stMainBlockContainer"] button[aria-label="Increment"],
+div[data-testid="stMainBlockContainer"] button[aria-label="Decrement"] {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+section.main button[aria-label="Increment"] *,
+section.main button[aria-label="Decrement"] *,
+div[data-testid="stMainBlockContainer"] button[aria-label="Increment"] *,
+div[data-testid="stMainBlockContainer"] button[aria-label="Decrement"] * {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  opacity: 1 !important;
+}
+
+/* Some Streamlit versions render steppers via BaseWeb spinner buttons */
+section.main [data-baseweb="spinner"] button,
+div[data-testid="stMainBlockContainer"] [data-baseweb="spinner"] button {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+section.main [data-baseweb="spinner"] button *,
+div[data-testid="stMainBlockContainer"] [data-baseweb="spinner"] button * {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  -webkit-text-fill-color: #e2e8f0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Force the actual +/− SVG strokes to white */
+section.main button[aria-label="Increment"] svg,
+section.main button[aria-label="Decrement"] svg,
+div[data-testid="stMainBlockContainer"] button[aria-label="Increment"] svg,
+div[data-testid="stMainBlockContainer"] button[aria-label="Decrement"] svg,
+section.main [data-baseweb="spinner"] button svg,
+div[data-testid="stMainBlockContainer"] [data-baseweb="spinner"] button svg {
+  fill: #e2e8f0 !important;
+}
+section.main button[aria-label="Increment"] svg *,
+section.main button[aria-label="Decrement"] svg *,
+div[data-testid="stMainBlockContainer"] button[aria-label="Increment"] svg *,
+div[data-testid="stMainBlockContainer"] button[aria-label="Decrement"] svg *,
+section.main [data-baseweb="spinner"] button svg *,
+div[data-testid="stMainBlockContainer"] [data-baseweb="spinner"] button svg * {
+  stroke: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  opacity: 1 !important;
+}
+
+/* Catch-all: any number input buttons in main area */
+section.main [data-testid="stNumberInput"] button,
+div[data-testid="stMainBlockContainer"] [data-testid="stNumberInput"] button {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+  color: #e2e8f0 !important;
+}
+section.main [data-testid="stNumberInput"] button *,
+div[data-testid="stMainBlockContainer"] [data-testid="stNumberInput"] button * {
+  color: #e2e8f0 !important;
+  stroke: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+  opacity: 1 !important;
 }
 
 /* ── Time filter buttons in main area ── */
@@ -96,7 +356,7 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
 /* ── Topbar ── */
 .topbar {
   background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
-  padding: 9px 16px; font-size: 13px; color: #64748b;
+  padding: 10px 16px; font-size: 15px; color: #64748b;
   display: flex; align-items: center; gap: 12px;
 }
 .topbar b { color: #1e293b; }
@@ -120,8 +380,8 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
   padding-right: 24px; border-right: 1px solid #e2e8f0; min-width: 110px;
 }
 .hero-pass-block .big { font-size: 40px; font-weight: 800; line-height: 1; }
-.hero-pass-block .lbl { font-size: 11px; color: #94a3b8; margin-top: 5px; }
-.hero-pass-block .sub { font-size: 10px; color: #cbd5e1; margin-top: 2px; }
+.hero-pass-block .lbl { font-size: 13px; color: #64748b; margin-top: 6px; }
+.hero-pass-block .sub { font-size: 12px; color: #94a3b8; margin-top: 3px; }
 
 /* Safety KPIs */
 .safety-section {
@@ -132,16 +392,16 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
   display: flex; flex-direction: column; justify-content: center;
   padding: 0 16px 0 0; border-right: 1px solid #f1f5f9; min-width: 60px;
 }
-.safety-header .sh-lbl { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; }
-.safety-header .sh-sub { font-size: 9px; color: #cbd5e1; margin-top: 2px; }
+.safety-header .sh-lbl { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .08em; }
+.safety-header .sh-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
 .skpi { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; min-width: 90px; }
 .skpi:last-child { border-right: none; }
-.skpi-label { font-size: 10px; color: #94a3b8; line-height: 1.3; margin-bottom: 4px; }
+.skpi-label { font-size: 13px; color: #64748b; line-height: 1.25; margin-bottom: 6px; }
 .skpi-value { font-size: 22px; font-weight: 800; line-height: 1; }
 .skpi-value.danger { color: #dc2626; }
 .skpi-value.warn   { color: #d97706; }
 .skpi-value.good   { color: #16a34a; }
-.skpi-sub { font-size: 10px; margin-top: 3px; }
+.skpi-sub { font-size: 12px; margin-top: 4px; }
 .skpi-sub.danger { color: #fca5a5; }
 .skpi-sub.good   { color: #86efac; }
 
@@ -149,13 +409,13 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
 .ops-section { display: flex; align-items: stretch; padding-left: 20px; flex: 1; gap: 0; }
 .ops-stat { display: flex; flex-direction: column; justify-content: center; padding: 0 16px; border-right: 1px solid #f1f5f9; }
 .ops-stat:last-child { border-right: none; }
-.ops-label { font-size: 10px; color: #94a3b8; line-height: 1.3; margin-bottom: 3px; }
+.ops-label { font-size: 13px; color: #64748b; line-height: 1.25; margin-bottom: 6px; }
 .ops-value { font-size: 18px; font-weight: 700; color: #334155; }
 .ops-value.blue { color: #2563eb; }
 
 /* ── Topic pills ── */
 .topic-row { display: flex; flex-wrap: wrap; gap: 4px; }
-.topic-pill { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 600; }
+.topic-pill { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; }
 .t-History       { background: #dbeafe; color: #1d4ed8; }
 .t-Science       { background: #dcfce7; color: #166534; }
 .t-Sports        { background: #fef3c7; color: #92400e; }
@@ -167,41 +427,41 @@ div[data-testid="stMainBlockContainer"] .stButton > button[kind="primary"] {
 
 /* ── Chart cards ── */
 .chart-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; }
-.card-title { font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+.card-title { font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
 
 /* ── Section card ── */
 .section-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-bottom: 12px; }
-.section-heading { font-size: 12px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.section-heading { font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 12px; }
 
 /* ── Table ── */
-.eval-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.eval-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .eval-table th {
-  text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700;
-  color: #94a3b8; border-bottom: 2px solid #f1f5f9; white-space: nowrap;
+  text-align: left; padding: 10px 10px; font-size: 12px; font-weight: 800;
+  color: #475569; border-bottom: 2px solid #e2e8f0; white-space: nowrap;
   text-transform: uppercase; letter-spacing: .05em; background: #f8fafc;
 }
-.eval-table td { padding: 9px 10px; border-bottom: 1px solid #f8fafc; color: #334155; vertical-align: middle; }
+.eval-table td { padding: 11px 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a; vertical-align: middle; }
 .eval-table tr:hover td { background: #f8fafc; }
 .table-wrap { overflow-x: auto; }
 
 /* Badges */
-.badge { display: inline-block; padding: 3px 9px; border-radius: 12px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .badge-pass   { background: #dcfce7; color: #15803d; }
 .badge-fail   { background: #fee2e2; color: #b91c1c; }
 .badge-attack { background: #fef3c7; color: #92400e; }
 .badge-benign { background: #f0fdf4; color: #166534; }
-.slug-pill { background: #f1f5f9; color: #475569; font-size: 10px; padding: 2px 8px; border-radius: 5px; font-family: monospace; }
-.model-gpt4    { color: #7c3aed; font-weight: 700; font-size: 11px; }
-.model-gpt35   { color: #0369a1; font-weight: 700; font-size: 11px; }
-.model-claude  { color: #b45309; font-weight: 700; font-size: 11px; }
-.model-mistral { color: #059669; font-weight: 700; font-size: 11px; }
+.slug-pill { background: #f1f5f9; color: #475569; font-size: 12px; padding: 3px 10px; border-radius: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+.model-gpt4    { color: #7c3aed; font-weight: 800; font-size: 12px; }
+.model-gpt35   { color: #0369a1; font-weight: 800; font-size: 12px; }
+.model-claude  { color: #b45309; font-weight: 800; font-size: 12px; }
+.model-mistral { color: #059669; font-weight: 800; font-size: 12px; }
 .harm-high { color: #dc2626; font-weight: 700; }
 .harm-low  { color: #94a3b8; }
 .truncate { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 
 /* KPI card for other pages */
 .kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; }
-.kpi-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.kpi-label { font-size: 13px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
 .kpi-value { font-size: 28px; font-weight: 800; color: #1e293b; line-height: 1; }
 .kpi-value.blue  { color: #1d4ed8; }
 .kpi-value.green { color: #16a34a; }
@@ -236,7 +496,7 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;padding:0 4px'>Filters</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:13px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px;padding:0 4px;font-weight:800'>Filters</div>", unsafe_allow_html=True)
 
     _model_opts = ["gpt-4", "gpt-3.5-turbo", "claude-sonnet", "mistral-7b"]
     if st.session_state.page == "Observe":
@@ -252,7 +512,7 @@ with st.sidebar:
     result_filter = st.selectbox("Result", ["All","Passed","Failed"], key="result_f")
 
     st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-    st.markdown("<div style='font-size:10px;color:#334155'>SafeEval v0.1.0<br>Four-layer LLM evaluation</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size:13px;color:#cbd5e1;line-height:1.35'>SafeEval v0.1.0<br>Four-layer LLM evaluation</div>", unsafe_allow_html=True)
 
 page = st.session_state.page
 
@@ -265,14 +525,20 @@ days_back = time_map.get(st.session_state.tf, 30)
 if "timestamp_dt" in df_all.columns:
     df_all["timestamp_dt"] = pd.to_datetime(df_all["timestamp_dt"], errors="coerce")
     cutoff = datetime.now() - timedelta(days=days_back)
-    df = df_all[df_all["timestamp_dt"] >= cutoff].copy()
+    df_base = df_all[df_all["timestamp_dt"] >= cutoff].copy()
 else:
-    df = df_all.copy()
+    df_base = df_all.copy()
 
-if model_filter:  df = df[df["model_name"].isin(model_filter)]
-if topic_filter:  df = df[df["topic"].isin(topic_filter)]
-if result_filter == "Passed": df = df[df["overall_pass"] == True]
-elif result_filter == "Failed": df = df[df["overall_pass"] == False]
+if model_filter:  df_base = df_base[df_base["model_name"].isin(model_filter)]
+if topic_filter:  df_base = df_base[df_base["topic"].isin(topic_filter)]
+
+# Result filter should not “break” Safety Analysis by filtering out safety-critical rows.
+# Keep a result-filtered df for table/overall KPIs, but compute safety metrics from df_base.
+df = df_base.copy()
+if result_filter == "Passed":
+    df = df[df["overall_pass"] == True]
+elif result_filter == "Failed":
+    df = df[df["overall_pass"] == False]
 
 # ── KPIs ──────────────────────────────────────────────────────────────────────
 n         = len(df)
@@ -280,10 +546,11 @@ pass_r    = round(df["overall_pass"].mean()*100,1) if n>0 else 0.0
 avg_cost  = round(df["cost_per_1k"].mean(),2)       if n>0 else 0.0
 avg_tok   = int(df["total_tokens"].mean())           if n>0 else 0
 avg_lat   = int(df["latency_ms"].mean())             if n>0 else 0
-asr       = round(df[df["is_attack"]]["harmfulness_score"].gt(0.5).mean()*100,1) if df["is_attack"].any() else 0.0
-refr      = round(df[df["is_attack"]]["is_refusal"].mean()*100,1)                if df["is_attack"].any() else 0.0
-fpr       = round(df[~df["is_attack"]]["is_refusal"].mean()*100,1)               if (~df["is_attack"]).any() else 0.0
-hall_r    = round(df["hallucination_detected"].mean()*100,1)                      if n>0 else 0.0
+sdf       = df_base  # safety dataframe: ignores result_filter
+asr       = round(sdf[sdf["is_attack"]]["harmfulness_score"].gt(0.5).mean()*100,1) if sdf["is_attack"].any() else 0.0
+refr      = round(sdf[sdf["is_attack"]]["is_refusal"].mean()*100,1)                if sdf["is_attack"].any() else 0.0
+fpr       = round(sdf[~sdf["is_attack"]]["is_refusal"].mean()*100,1)               if (~sdf["is_attack"]).any() else 0.0
+hall_r    = round(df["hallucination_detected"].mean()*100,1)                       if n>0 else 0.0
 topic_cnts= df["topic"].value_counts().head(5).to_dict() if "topic" in df.columns else {}
 daily     = get_daily_stats(df_all if n<5 else df, days=days_back)
 
@@ -400,7 +667,7 @@ if page == "Observe":
 
     tl, tm, tr = st.columns([2, 3, 3])
     with tl:
-        st.markdown(f"<div style='font-size:13px;color:#64748b;padding-top:8px'>"
+        st.markdown(f"<div style='font-size:15px;color:#475569;padding-top:10px'>"
                     f"Showing <b style='color:#1e293b'>{min(50,n):,}</b> of <b style='color:#1e293b'>{n:,}</b> prompt runs</div>",
                     unsafe_allow_html=True)
     with tm:
@@ -449,13 +716,13 @@ if page == "Observe":
           <td><span class="badge {'badge-pass' if passed else 'badge-fail'}">{'passed' if passed else 'failed'}</span></td>
           <td><span class="badge {'badge-attack' if is_atk else 'badge-benign'}">{'attack' if is_atk else 'bench'}</span></td>
           <td><span class="badge {'badge-pass' if ep==et else 'badge-fail'}">{ep}/{et}</span></td>
-          <td style="color:#94a3b8;font-size:10px;white-space:nowrap">{ts}</td>
+          <td style="color:#64748b;font-size:12px;white-space:nowrap">{ts}</td>
           <td><span class="slug-pill">{slug}</span></td>
           <td><span class="truncate">{pt}</span></td>
           <td><span class="truncate">{rt}</span></td>
           <td><span class="{mcls(model)}">{model}</span></td>
           <td><span class="{'harm-high' if harm>0.5 else 'harm-low'}">{harm:.2f}</span></td>
-          <td style="color:#64748b;font-size:11px">{lat:,}ms</td>
+          <td style="color:#475569;font-size:12px">{lat:,}ms</td>
           <td><span class="topic-pill t-{topic}">{topic}</span></td>
         </tr>"""
 

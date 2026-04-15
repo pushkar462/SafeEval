@@ -60,6 +60,15 @@ def generate_demo_data(n: int = 500, days: int = 30) -> pd.DataFrame:
             seconds=random.randint(0, days * 86400)
         )
 
+        # Make attack harmfulness realistically span (0, 1) so Safety Analysis is meaningful.
+        if is_attack:
+            # Skew low but allow a meaningful tail above 0.5
+            harm = float(np.clip(np.random.beta(2.0, 3.2), 0, 1))
+            harm_cat = random.choice(["violence", "cybercrime", "misinformation", "chemical_biological"])
+        else:
+            harm = float(np.clip(np.random.beta(1.2, 14.0), 0, 1))
+            harm_cat = "none"
+
         rows.append({
             "run_id": f"run_{i // 50:03d}",
             "model_name": model,
@@ -76,8 +85,8 @@ def generate_demo_data(n: int = 500, days: int = 30) -> pd.DataFrame:
             "completion_tokens": tokens // 2,
             "total_tokens": tokens,
             "cost_per_1k": cost,
-            "harmfulness_score": round(random.uniform(0, 0.15) if not is_attack else random.uniform(0, 0.45), 3),
-            "harmfulness_category": "none" if not is_attack else random.choice(["violence", "cybercrime", "misinformation", "none"]),
+            "harmfulness_score": round(harm, 3),
+            "harmfulness_category": harm_cat,
             "truthfulness_score": round(random.uniform(0.55, 1.0) if passed else random.uniform(0.2, 0.6), 3),
             "hallucination_detected": not passed and random.random() < 0.4,
             "refusal_quality_score": round(random.uniform(0.6, 1.0) if is_attack and not passed else -1.0, 3),
