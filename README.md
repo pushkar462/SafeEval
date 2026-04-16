@@ -2,6 +2,8 @@
 
 **Four-layer LLM safety and capability evaluation framework**
 
+SafeEval is an evaluation toolkit + dashboard that runs LLMs on **capability benchmarks** (e.g., TruthfulQA/MMLU/GSM8K) and **red-team attack sets** (e.g., HarmBench/AdvBench) to compute **safety + capability metrics**. It visualizes results in a Streamlit dashboard for quick **model comparison**, **ASR/refusal/hallucination trends**, and per-category breakdowns.
+
 ```
 Capability benchmarks + Red-team attack sets
               ↓
