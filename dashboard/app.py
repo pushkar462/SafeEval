@@ -28,8 +28,10 @@ st.markdown("""
 <style>
 /* ── Base ── */
 html, body, [data-testid="stAppViewContainer"] { background: #f4f6fb !important; }
-/* Increase font sizes without breaking dropdown positioning (avoid `zoom`) */
-html { font-size: 145% !important; }
+/* Keep default sizing (avoid `zoom`) so 100% browser zoom looks correct.
+   Deploy environments can inject different base styles, so set both html + :root. */
+:root { font-size: 100% !important; }
+html { font-size: 100% !important; }
 
 /* Minimum readable defaults across the app */
 section.main, div[data-testid="stMainBlockContainer"] { font-size: 1.05rem !important; }
@@ -65,6 +67,28 @@ div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] {
   --gdg-text-dark: #0f172a;
   --gdg-text-medium: #334155;
   --gdg-text-light: #475569;
+}
+
+/* Dataframe toolbar (Download as CSV, etc.) — icons can disappear with global color overrides */
+section.main [data-testid="stDataFrame"] [data-testid="stElementToolbar"] button,
+div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] [data-testid="stElementToolbar"] button,
+section.main [data-testid="stDataFrame"] [data-testid="stElementToolbar"] [role="button"],
+div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] [data-testid="stElementToolbar"] [role="button"] {
+  color: #e2e8f0 !important;
+}
+section.main [data-testid="stDataFrame"] [data-testid="stElementToolbar"] svg,
+div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] [data-testid="stElementToolbar"] svg,
+section.main [data-testid="stDataFrame"] [data-testid="stElementToolbar"] svg *,
+div[data-testid="stMainBlockContainer"] [data-testid="stDataFrame"] [data-testid="stElementToolbar"] svg * {
+  fill: currentColor !important;
+  stroke: currentColor !important;
+  opacity: 1 !important;
+}
+
+/* Streamlit toolbars are often rendered as overlays *outside* the element subtree,
+   so add a global override for any element toolbar. */
+[data-testid="stElementToolbar"] {
+  display: none !important;
 }
 /* Avoid forcing background-color on all descendants (can blank canvas grids) */
 
@@ -223,16 +247,16 @@ header[data-testid="stHeader"] {
 
 /* Never let the sidebar collapse (some browsers persist a collapsed state). */
 [data-testid="stSidebar"] {
-  width: 16rem !important;
-  min-width: 16rem !important;
-  max-width: 16rem !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
   transform: none !important;
   margin-left: 0 !important;
 }
 [data-testid="stSidebar"][aria-expanded="false"] {
-  width: 16rem !important;
-  min-width: 16rem !important;
-  max-width: 16rem !important;
+  width: 260px !important;
+  min-width: 260px !important;
+  max-width: 260px !important;
   transform: none !important;
   margin-left: 0 !important;
 }
